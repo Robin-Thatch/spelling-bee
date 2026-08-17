@@ -305,6 +305,34 @@ header h1 {
 }
 
 /* ===== Input Area ===== */
+#recent-words-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 16px;
+  min-height: 24px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.recent-word {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.recent-word.pangram {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.recent-ellipsis {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
 #input-area {
   text-align: center;
   min-height: 40px;

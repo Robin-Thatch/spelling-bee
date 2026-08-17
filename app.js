@@ -31,6 +31,7 @@ function cacheDom() {
   els.inputArea = document.getElementById('input-area');
   els.inputText = document.getElementById('input-text');
   els.cursor = document.getElementById('cursor');
+  els.recentWordsBar = document.getElementById('recent-words-bar');
   els.message = document.getElementById('message');
   els.foundWords = document.getElementById('found-words');
   els.foundToggle = document.getElementById('btn-found-toggle');
@@ -372,6 +373,57 @@ function updateFoundWords() {
     }
     div.textContent = word;
     container.appendChild(div);
+  });
+  
+  updateRecentWords();
+}
+
+function updateRecentWords() {
+  if (!els.recentWordsBar) return;
+  els.recentWordsBar.innerHTML = '';
+  
+  if (state.foundWords.length === 0) return;
+  
+  // Show the most recent words (last found, right-to-left)
+  const recent = [...state.foundWords].reverse();
+  const bar = els.recentWordsBar;
+  
+  recent.forEach((word, i) => {
+    const span = document.createElement('span');
+    span.className = 'recent-word';
+    if (currentPuzzle.pangrams.includes(word)) {
+      span.classList.add('pangram');
+    }
+    span.textContent = word;
+    bar.appendChild(span);
+    
+    // Add separator
+    if (i < recent.length - 1) {
+      const sep = document.createElement('span');
+      sep.textContent = '\u00b7';
+      sep.style.opacity = '0.4';
+      bar.appendChild(sep);
+    }
+  });
+  
+  // After rendering, check if content overflows and add ellipsis
+  requestAnimationFrame(() => {
+    if (bar.scrollWidth > bar.clientWidth) {
+      // Content overflows — add ellipsis and trim until it fits
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'recent-ellipsis';
+      ellipsis.textContent = '...';
+      bar.appendChild(ellipsis);
+      
+      // Remove words from the start until it fits
+      while (bar.scrollWidth > bar.clientWidth && bar.children.length > 2) {
+        // Remove first word and its separator (if any)
+        bar.removeChild(bar.firstElementChild);
+        if (bar.firstElementChild && bar.firstElementChild.textContent === '\u00b7') {
+          bar.removeChild(bar.firstElementChild);
+        }
+      }
+    }
   });
 }
 
