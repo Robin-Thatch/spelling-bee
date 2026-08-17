@@ -20,6 +20,8 @@ let generator = null;
 let currentPuzzle = null;
 let inputValue = '';
 let messageTimeout = null;
+let pangramHintLevel = 0; // 0-6, then extra chars revealed after level 6
+let extraCharsRevealed = 0; // Additional characters revealed after level 6
 
 // ===== DOM Elements =====
 const els = {};
@@ -547,22 +549,154 @@ function showHints() {
   html += '<div class="two-letter-section"><h3>Two-Letter Counts</h3><div class="two-letter-grid">';
   
   const twoLetterCounts = {};
+  const twoLetterFound = {};
   currentPuzzle.answers.forEach(word => {
     if (word.length >= 2) {
       const pair = word.slice(0, 2).toUpperCase();
       twoLetterCounts[pair] = (twoLetterCounts[pair] || 0) + 1;
+      if (state.foundWords.includes(word)) {
+        twoLetterFound[pair] = (twoLetterFound[pair] || 0) + 1;
+      }
     }
   });
   
   const sortedPairs = Object.entries(twoLetterCounts).sort((a, b) => a[0].localeCompare(b[0]));
   sortedPairs.forEach(([pair, count]) => {
-    html += `<div class="two-letter-item">${pair}: ${count}</div>`;
+    const found = twoLetterFound[pair] || 0;
+    const display = found > 0 ? `${found}/${count}` : `${count}`;
+    const className = found === count ? 'two-letter-item solved' : (found > 0 ? 'two-letter-item partial' : 'two-letter-item');
+    html += `<div class="${className}">${pair}: ${display}</div>`;
   });
   
   html += '</div></div>';
   
+  // Pangram hints section
+  html += '<div class="pangram-hints-section"><h3>Pangram Hints</h3>';
+  html += '<div class="pangram-hints-content">';
+  html += generatePangramHints();
+  html += '</div>';
+  
+  // Show button if we haven't revealed all characters yet
+  const maxRevealNeeded = getMaxRevealNeeded();
+  const showButton = pangramHintLevel < 6 || (pangramHintLevel >= 6 && extraCharsRevealed < maxRevealNeeded);
+  
+  if (showButton) {
+    html += '<button id="btn-pangram-hint" class="text-btn pangram-hint-btn">Reveal next hint</button>';
+  }
+  html += '</div>';
+  
   els.hintsContent.innerHTML = html;
+  
+  // Add event listener for pangram hint button
+  const hintBtn = document.getElementById('btn-pangram-hint');
+  if (hintBtn) {
+    hintBtn.addEventListener('click', () => {
+      if (pangramHintLevel < 6) {
+        pangramHintLevel++;
+      } else {
+        extraCharsRevealed++;
+      }
+      showHints(); // Re-render hints with new level
+    });
+  }
+  
   showOverlay(els.hintsOverlay);
+}
+
+function getMaxRevealNeeded() {
+  if (!currentPuzzle) return 0;
+  // Return the maximum number of extra chars needed across all pangrams
+  return Math.max(...currentPuzzle.pangrams.map(p => p.length - 3)); // -3 for the prefix already shown
+}
+
+function generatePangramHints() {
+  if (!currentPuzzle) return '';
+  
+  const pangrams = currentPuzzle.pangrams;
+  const foundPangrams = pangrams.filter(w => state.foundWords.includes(w));
+  
+  let html = '';
+  
+  // Level 1: How many pangrams
+  if (pangramHintLevel >= 1) {
+    const total = pangrams.length;
+    const found = foundPangrams.length;
+    html += `<div class="pangram-hint-level"><span class="hint-label">Pangrams:</span> ${found}/${total} found</div>`;
+  }
+  
+  // Level 2: First letter of each
+  if (pangramHintLevel >= 2) {
+    html += '<div class="pangram-hint-level"><span class="hint-label">Starts with:</span> ';
+    html += pangrams.map(p => {
+      const isFound = state.foundWords.includes(p);
+      return `<span class="hint-letter ${isFound ? 'found' : ''}">${p[0].toUpperCase()}</span>`;
+    }).join(', ');
+    html += '</div>';
+  }
+  
+  // Level 3: Length of each
+  if (pangramHintLevel >= 3) {
+    html += '<div class="pangram-hint-level"><span class="hint-label">Length:</span> ';
+    html += pangrams.map(p => {
+      const isFound = state.foundWords.includes(p);
+      return `<span class="hint-length ${isFound ? 'found' : ''}">${p.length} letters</span>`;
+    }).join(', ');
+    html += '</div>';
+  }
+  
+  // Level 4: Two-letter combination
+  if (pangramHintLevel >= 4) {
+    html += '<div class="pangram-hint-level"><span class="hint-label">First 2 letters:</span> ';
+    html += pangrams.map(p => {
+      const isFound = state.foundWords.includes(p);
+      return `<span class="hint-prefix ${isFound ? 'found' : ''}">${p.slice(0, 2).toUpperCase()}</span>`;
+    }).join(', ');
+    html += '</div>';
+  }
+  
+  // Level 5: Three starting letters
+  if (pangramHintLevel >= 5) {
+    html += '<div class="pangram-hint-level"><span class="hint-label">First 3 letters:</span> ';
+    html += pangrams.map(p => {
+      const isFound = state.foundWords.includes(p);
+      return `<span class="hint-prefix ${isFound ? 'found' : ''}">${p.slice(0, 3).toUpperCase()}</span>`;
+    }).join(', ');
+    html += '</div>';
+  }
+  
+  // Level 6+: Partial reveal with progressive disclosure
+  if (pangramHintLevel >= 6) {
+    html += '<div class="pangram-hint-level"><span class="hint-label">Partial:</span> ';
+    html += pangrams.map(p => {
+      const isFound = state.foundWords.includes(p);
+      if (isFound) {
+        return `<span class="hint-word found">${p.toUpperCase()}</span>`;
+      }
+      
+      // First 3 letters are always shown
+      // After level 6, each click reveals one more random character
+      const knownPrefix = 3;
+      const totalExtraNeeded = p.length - knownPrefix;
+      const extraToReveal = Math.min(extraCharsRevealed, totalExtraNeeded);
+      
+      // Get remaining indices (after prefix) and shuffle for consistent random reveal
+      const remainingIndices = Array.from({length: p.length - knownPrefix}, (_, i) => i + knownPrefix);
+      // Use a seeded shuffle based on word to keep consistency between renders
+      const seed = p.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const shuffled = remainingIndices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+      
+      const revealIndices = new Set([0, 1, 2, ...shuffled.slice(0, extraToReveal)]);
+      
+      const partial = p.split('').map((c, i) => 
+        revealIndices.has(i) ? c.toUpperCase() : '_'
+      ).join('');
+      
+      return `<span class="hint-word partial">${partial}</span>`;
+    }).join(', ');
+    html += '</div>';
+  }
+  
+  return html;
 }
 
 // ===== History =====
@@ -808,7 +942,11 @@ function setupEventListeners() {
   
   // Hints
   document.getElementById('btn-hints').addEventListener('click', showHints);
-  document.getElementById('btn-hints-close').addEventListener('click', () => hideOverlay(els.hintsOverlay));
+  document.getElementById('btn-hints-close').addEventListener('click', () => {
+    pangramHintLevel = 0;
+    extraCharsRevealed = 0;
+    hideOverlay(els.hintsOverlay);
+  });
   
   // Theme toggle
   els.btnTheme.addEventListener('click', toggleTheme);

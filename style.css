@@ -447,21 +447,24 @@ header h1 {
 
 /* ===== Hints Table ===== */
 #hints-content {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .hints-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
   margin-bottom: 20px;
+  table-layout: fixed;
 }
 
 .hints-table th,
 .hints-table td {
-  padding: 8px 6px;
+  padding: 6px 2px;
   text-align: center;
   border: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hints-table th {
@@ -490,7 +493,7 @@ header h1 {
   font-weight: 600;
   background: var(--bg-secondary);
   text-align: left;
-  padding-left: 10px;
+  padding-left: 6px;
 }
 
 .hints-table .col-header {
@@ -530,6 +533,96 @@ header h1 {
   font-size: 13px;
   text-align: center;
   font-family: monospace;
+  white-space: nowrap;
+}
+
+.two-letter-item.solved {
+  background: var(--success-light);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.two-letter-item.partial {
+  color: var(--text-secondary);
+}
+
+/* ===== Pangram Hints ===== */
+.pangram-hints-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.pangram-hints-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.pangram-hints-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pangram-hint-level {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pangram-hint-level .hint-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 8px;
+}
+
+.pangram-hint-level .hint-letter,
+.pangram-hint-level .hint-length,
+.pangram-hint-level .hint-prefix {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.pangram-hint-level .hint-letter.found,
+.pangram-hint-level .hint-length.found,
+.pangram-hint-level .hint-prefix.found {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.pangram-hint-level .hint-word {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.pangram-hint-level .hint-word.found {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.pangram-hint-level .hint-word.partial {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
+.pangram-hint-level .hint-word.revealed {
+  background: var(--accent);
+  color: #1a1a1a;
+}
+
+.pangram-hint-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 8px 16px;
 }
 
 /* ===== Settings ===== */
