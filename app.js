@@ -14,7 +14,6 @@ let state = {
   foundWords: [],
   score: 0,
   history: [], // Array of { puzzleId, letters, centerLetter, foundWords, score, maxPoints, rank, completed, revealedAt }
-  puzzleSeed: Date.now(),
 };
 
 let puzzles = [];
@@ -108,8 +107,8 @@ function toggleTheme() {
 
 // ===== Puzzle Management =====
 function getNextPuzzleId() {
-  // Simple incrementing, wrap around
-  return state.currentPuzzleId % puzzles.length;
+  // Pick a random puzzle from the pool
+  return Math.floor(Math.random() * puzzles.length);
 }
 
 function startPuzzle() {
@@ -673,7 +672,7 @@ function showSolution(entry, isGiveUp = false) {
   
   if (isGiveUp) {
     // When giving up, offer to generate a new puzzle
-    btnNext.textContent = 'Generate New Puzzle';
+    btnNext.textContent = 'Generate new puzzle';
     btnNext.onclick = () => nextPuzzle();
   } else if (entry.puzzleId === state.currentPuzzleId) {
     btnNext.textContent = 'Close';
