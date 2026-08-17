@@ -206,12 +206,16 @@ function submitWord() {
   if (word.length < 4) {
     showMessage('Too short', 'error');
     shakeInput();
+    inputValue = '';
+    updateInput();
     return;
   }
   
   if (!word.includes(currentPuzzle.centerLetter)) {
     showMessage('Missing center letter', 'error');
     shakeInput();
+    inputValue = '';
+    updateInput();
     return;
   }
   
@@ -220,6 +224,8 @@ function submitWord() {
   if (!word.split('').every(l => availableLetters.has(l))) {
     showMessage('Bad letters', 'error');
     shakeInput();
+    inputValue = '';
+    updateInput();
     return;
   }
   
