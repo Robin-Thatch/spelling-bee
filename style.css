@@ -88,6 +88,15 @@ header h1 {
   letter-spacing: -0.5px;
 }
 
+/* ===== Main Game Area ===== */
+#game-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .icon-btn {
   background: none;
   border: none;
@@ -254,15 +263,17 @@ header h1 {
   justify-content: center;
   align-items: center;
   flex: 1;
-  padding: 0 10px;
+  padding: 12px 10px 0;
   touch-action: manipulation;
   position: relative;
+  min-height: 0;
 }
 
 #hive svg {
   width: 100%;
   max-width: 360px;
   height: auto;
+  max-height: 100%;
 }
 
 .hex-cell {
