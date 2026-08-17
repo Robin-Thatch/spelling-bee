@@ -849,6 +849,8 @@ function giveUp() {
     puzzleId: state.currentPuzzleId,
     letters: currentPuzzle.letters,
     centerLetter: currentPuzzle.centerLetter,
+    answers: currentPuzzle.answers,
+    pangrams: currentPuzzle.pangrams,
     foundWords: [...state.foundWords],
     score: state.score,
     maxPoints: currentPuzzle.maxPoints,
