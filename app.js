@@ -16,7 +16,7 @@ let state = {
   history: [], // Array of { puzzleId, letters, centerLetter, foundWords, score, maxPoints, rank, completed, revealedAt }
 };
 
-let puzzles = [];
+let generator = null;
 let currentPuzzle = null;
 let inputValue = '';
 let messageTimeout = null;
@@ -63,13 +63,18 @@ async function init() {
 
 async function loadPuzzles() {
   try {
-    const response = await fetch('puzzles.json');
-    const data = await response.json();
-    puzzles = data.puzzles;
-    console.log(`Loaded ${puzzles.length} puzzles`);
+    generator = new PuzzleGenerator();
+    const success = await generator.loadWords();
+    if (!success) {
+      showMessage('Failed to load word list', 'error');
+      return false;
+    }
+    console.log('Puzzle generator ready');
+    return true;
   } catch (err) {
-    console.error('Failed to load puzzles:', err);
-    showMessage('Failed to load puzzles', 'error');
+    console.error('Failed to initialize generator:', err);
+    showMessage('Failed to initialize puzzle generator', 'error');
+    return false;
   }
 }
 
@@ -106,37 +111,27 @@ function toggleTheme() {
 }
 
 // ===== Puzzle Management =====
-function getNextPuzzleId() {
-  // Pick a random puzzle from the pool
-  return Math.floor(Math.random() * puzzles.length);
-}
-
 function startPuzzle() {
-  const id = getNextPuzzleId();
-  currentPuzzle = puzzles[id];
+  if (!generator || !generator.loaded) {
+    showMessage('Puzzle generator not ready', 'error');
+    return;
+  }
+  
+  // Generate a new puzzle
+  currentPuzzle = generator.generate();
   
   if (!currentPuzzle) {
-    showMessage('No puzzles available', 'error');
+    showMessage('Could not generate puzzle', 'error');
     return;
   }
   
-  // Check if we have saved progress for this puzzle
-  const existingHistory = state.history.find(h => h.puzzleId === id);
-  if (existingHistory && !existingHistory.completed) {
-    // Resume
-    state.foundWords = existingHistory.foundWords || [];
-    state.score = existingHistory.score || 0;
-  } else if (existingHistory && existingHistory.completed) {
-    // This puzzle is done, get next
-    state.currentPuzzleId++;
-    saveState();
-    startPuzzle();
-    return;
-  } else {
-    // New puzzle
-    state.foundWords = [];
-    state.score = 0;
-  }
+  // New puzzle - reset state
+  state.currentPuzzleId++;
+  state.foundWords = [];
+  state.score = 0;
+  
+  // Store puzzle in history for reference
+  updateHistory();
   
   renderHive();
   renderScoreMarkers();
@@ -277,11 +272,14 @@ function updateHistory() {
   if (existing) {
     existing.foundWords = [...state.foundWords];
     existing.score = state.score;
+    existing.rank = getCurrentRank();
   } else {
     state.history.push({
       puzzleId: state.currentPuzzleId,
       letters: currentPuzzle.letters,
       centerLetter: currentPuzzle.centerLetter,
+      answers: currentPuzzle.answers,
+      pangrams: currentPuzzle.pangrams,
       foundWords: [...state.foundWords],
       score: state.score,
       maxPoints: currentPuzzle.maxPoints,
@@ -611,8 +609,11 @@ function showHistory() {
 
 // ===== Solution =====
 function showSolution(entry, isGiveUp = false) {
-  const puzzle = puzzles[entry.puzzleId];
-  if (!puzzle) return;
+  // Use puzzle data from entry (stored in history)
+  const puzzle = {
+    answers: entry.answers || [],
+    pangrams: entry.pangrams || []
+  };
   
   let html = `
     <div class="solution-stats">
@@ -674,17 +675,10 @@ function showSolution(entry, isGiveUp = false) {
     // When giving up, offer to generate a new puzzle
     btnNext.textContent = 'Generate new puzzle';
     btnNext.onclick = () => nextPuzzle();
-  } else if (entry.puzzleId === state.currentPuzzleId) {
+  } else {
+    // From history or completed - just close
     btnNext.textContent = 'Close';
     btnNext.onclick = () => hideOverlay(els.solutionOverlay);
-  } else {
-    btnNext.textContent = 'Play This Puzzle';
-    btnNext.onclick = () => {
-      state.currentPuzzleId = entry.puzzleId;
-      saveState();
-      hideOverlay(els.solutionOverlay);
-      startPuzzle();
-    };
   }
   
   hideOverlay(els.historyOverlay);
