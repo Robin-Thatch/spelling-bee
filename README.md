@@ -1,6 +1,6 @@
 # Spelling Bee
 
-A Progressive Web App clone of the NYT Spelling Bee word game.
+A clone of the NYT Spelling Bee word game.
 
 ## Play
 
@@ -28,7 +28,7 @@ Open `index.html` in a browser, or deploy to GitHub Pages.
 3. Select "Deploy from a branch" and choose `main` / `/ (root)`
 4. Your game will be at `https://YOUR_USERNAME.github.io/YOUR_REPO/`
 
-## Install as PWA
+## Install as App
 
 On Android:
 1. Open the game in Chrome

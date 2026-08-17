@@ -1,5 +1,5 @@
 /**
- * Spelling Bee - PWA Game
+ * Spelling Bee - Web Game
  * A clone of the NYT Spelling Bee word game
  */
 
