@@ -295,11 +295,8 @@ header h1 {
 
 /* ===== Input Area ===== */
 #input-area {
-  position: absolute;
-  top: 6px;
-  left: 0;
   text-align: center;
-  min-height: 36px;
+  min-height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -307,11 +304,7 @@ header h1 {
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
-  z-index: 2;
-  pointer-events: none;
-  width: 0;
-  overflow: visible;
-  white-space: nowrap;
+  padding: 4px 16px 0;
 }
 
 #cursor {

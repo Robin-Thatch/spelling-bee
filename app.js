@@ -190,11 +190,7 @@ function renderHiveWithLetters(letters, centerLetter) {
 }
 
 function alignInputArea() {
-  const hiveRect = els.hive.getBoundingClientRect();
-  const centerLetter = document.getElementById('letter-center');
-  const letterRect = centerLetter.getBoundingClientRect();
-  const centerOffset = letterRect.left + letterRect.width / 2 - hiveRect.left;
-  els.inputArea.style.left = centerOffset + 'px';
+  // No-op: input is now in normal flow, centered by CSS
 }
 
 // ===== Input Handling =====
@@ -390,8 +386,12 @@ function showMessage(text, type = 'info') {
 }
 
 function shakeInput() {
+  els.inputArea.classList.add('shake');
   els.hive.classList.add('shake');
-  setTimeout(() => els.hive.classList.remove('shake'), 400);
+  setTimeout(() => {
+    els.inputArea.classList.remove('shake');
+    els.hive.classList.remove('shake');
+  }, 400);
 }
 
 // ===== Hints =====
