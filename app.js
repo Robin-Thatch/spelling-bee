@@ -49,6 +49,7 @@ function cacheDom() {
   els.completeOverlay = document.getElementById('complete-overlay');
   els.completeMessage = document.getElementById('complete-message');
   els.toggleDark = document.getElementById('toggle-dark');
+  els.btnGiveUp = document.getElementById('btn-give-up');
 }
 
 // ===== Initialization =====
@@ -384,7 +385,7 @@ function updateRecentWords() {
   
   if (state.foundWords.length === 0) return;
   
-  // Show the most recent words (last found, right-to-left)
+  // Show the most recent words (newest first, left-to-right)
   const recent = [...state.foundWords].reverse();
   const bar = els.recentWordsBar;
   
@@ -406,23 +407,20 @@ function updateRecentWords() {
     }
   });
   
-  // After rendering, check if content overflows and add ellipsis
+  // After rendering, check if content overflows and trim oldest (end)
   requestAnimationFrame(() => {
     if (bar.scrollWidth > bar.clientWidth) {
-      // Content overflows — add ellipsis and trim until it fits
+      // Content overflows — trim from the end (oldest words)
+      while (bar.scrollWidth > bar.clientWidth && bar.children.length > 1) {
+        // Remove last element
+        bar.removeChild(bar.lastElementChild);
+      }
+      
+      // Add ellipsis to indicate more words exist
       const ellipsis = document.createElement('span');
       ellipsis.className = 'recent-ellipsis';
       ellipsis.textContent = '...';
       bar.appendChild(ellipsis);
-      
-      // Remove words from the start until it fits
-      while (bar.scrollWidth > bar.clientWidth && bar.children.length > 2) {
-        // Remove first word and its separator (if any)
-        bar.removeChild(bar.firstElementChild);
-        if (bar.firstElementChild && bar.firstElementChild.textContent === '\u00b7') {
-          bar.removeChild(bar.firstElementChild);
-        }
-      }
     }
   });
 }
@@ -598,10 +596,13 @@ function showHistory() {
       return l.toUpperCase();
     }).join('');
     
+    const statusText = entry.revealedAt ? 'Revealed' : (entry.completed ? 'Completed' : 'In Progress');
+    
     div.innerHTML = `
       <div class="history-item-info">
         <div class="history-item-letters">${lettersHtml}</div>
         <div class="history-item-stats">${entry.foundWords.length} words • ${entry.score} pts</div>
+        <div class="history-item-status ${entry.revealedAt ? 'revealed' : (entry.completed ? 'completed' : 'in-progress')}">${statusText}</div>
       </div>
       <div class="history-item-rank">${entry.rank}</div>
     `;
@@ -614,7 +615,7 @@ function showHistory() {
 }
 
 // ===== Solution =====
-function showSolution(entry) {
+function showSolution(entry, isGiveUp = false) {
   const puzzle = puzzles[entry.puzzleId];
   if (!puzzle) return;
   
@@ -643,12 +644,27 @@ function showSolution(entry) {
     byLength[len].push(word);
   });
   
+  // Count found and missed
+  const foundCount = entry.foundWords.length;
+  const missedCount = puzzle.answers.length - foundCount;
+  
+  // Add a summary if there are missed words
+  if (missedCount > 0) {
+    html += `<div class="solution-summary">
+      <span class="found-summary">${foundCount} found</span>
+      <span class="missed-summary">${missedCount} missed</span>
+    </div>`;
+  }
+  
   Object.keys(byLength).sort((a, b) => a - b).forEach(len => {
     html += `<div class="solution-section"><h3>${len} letters</h3><div class="solution-word-list">`;
     byLength[len].forEach(word => {
       const classes = ['solution-word'];
-      if (entry.foundWords.includes(word)) classes.push('found');
-      if (puzzle.pangrams.includes(word)) classes.push('pangram');
+      const isFound = entry.foundWords.includes(word);
+      const isPangram = puzzle.pangrams.includes(word);
+      if (isFound) classes.push('found');
+      if (!isFound) classes.push('missed');
+      if (isPangram) classes.push('pangram');
       html += `<span class="${classes.join(' ')}">${word}</span>`;
     });
     html += '</div></div>';
@@ -656,13 +672,19 @@ function showSolution(entry) {
   
   els.solutionContent.innerHTML = html;
   
-  // Update the puzzle if viewing history of current puzzle
-  if (entry.puzzleId === state.currentPuzzleId) {
-    document.getElementById('btn-next-puzzle').textContent = 'Close';
-    document.getElementById('btn-next-puzzle').onclick = () => hideOverlay(els.solutionOverlay);
+  // Update the button based on context
+  const btnNext = document.getElementById('btn-next-puzzle');
+  
+  if (isGiveUp) {
+    // When giving up, offer to generate a new puzzle
+    btnNext.textContent = 'Generate New Puzzle';
+    btnNext.onclick = () => nextPuzzle();
+  } else if (entry.puzzleId === state.currentPuzzleId) {
+    btnNext.textContent = 'Close';
+    btnNext.onclick = () => hideOverlay(els.solutionOverlay);
   } else {
-    document.getElementById('btn-next-puzzle').textContent = 'Play This Puzzle';
-    document.getElementById('btn-next-puzzle').onclick = () => {
+    btnNext.textContent = 'Play This Puzzle';
+    btnNext.onclick = () => {
       state.currentPuzzleId = entry.puzzleId;
       saveState();
       hideOverlay(els.solutionOverlay);
@@ -673,6 +695,32 @@ function showSolution(entry) {
   hideOverlay(els.historyOverlay);
   showOverlay(els.solutionOverlay);
 }
+
+// ===== Give Up / Reveal Solution =====
+function giveUp() {
+  if (!currentPuzzle) return;
+  
+  // Mark as completed/revealed in history
+  const existing = state.history.find(h => h.puzzleId === state.currentPuzzleId);
+  if (existing) {
+    existing.completed = true;
+    existing.revealedAt = Date.now();
+  }
+  saveState();
+  
+  // Show solution for current puzzle
+  const entry = {
+    puzzleId: state.currentPuzzleId,
+    letters: currentPuzzle.letters,
+    centerLetter: currentPuzzle.centerLetter,
+    foundWords: [...state.foundWords],
+    score: state.score,
+    maxPoints: currentPuzzle.maxPoints,
+    rank: getCurrentRank(),
+  };
+  
+  showSolution(entry, true);
+};
 
 // ===== Game Complete =====
 function showComplete() {
@@ -715,6 +763,8 @@ function nextPuzzle() {
   saveState();
   hideOverlay(els.solutionOverlay);
   hideOverlay(els.completeOverlay);
+  inputValue = '';
+  updateInput();
   startPuzzle();
 }
 
@@ -784,6 +834,9 @@ function setupEventListeners() {
   
   // Solution
   document.getElementById('btn-solution-close').addEventListener('click', () => hideOverlay(els.solutionOverlay));
+  
+  // Give Up / Reveal Solution
+  els.btnGiveUp.addEventListener('click', giveUp);
   
   // Complete
   document.getElementById('btn-reveal-missed').addEventListener('click', revealMissedWords);
