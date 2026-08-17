@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#f7da21">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Spelling Bee</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header>
+      <div style="width:40px"></div>
+      <h1>Spelling Bee</h1>
+      <button id="btn-settings" class="icon-btn" aria-label="Settings">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Main Game Area -->
+    <main id="game-view">
+      <!-- Score / Ranking -->
+      <div id="score-area">
+        <div id="current-rank">Beginner</div>
+        <div id="score-bar-container">
+          <div id="score-bar"></div>
+          <div id="score-markers"></div>
+        </div>
+        <div id="score-value">0</div>
+      </div>
+
+      <!-- Found Words -->
+      <div id="found-words-container">
+        <div id="found-words"></div>
+        <button id="btn-found-toggle" class="text-btn" aria-label="Show found words">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Message -->
+      <div id="message" class="hidden"></div>
+
+      <!-- Honeycomb Grid -->
+      <div id="hive">
+        <div id="input-area">
+          <span id="input-text"></span>
+          <span id="cursor">|</span>
+        </div>
+        <svg viewBox="0 0 360 320">
+          <!-- Outer cells (drawn first, behind center) -->
+          <polygon id="cell-0" class="hex-cell outer" points="227.0,56.3 198.5,6.9 141.5,6.9 113.0,56.3 141.5,105.6 198.5,105.6"/>
+          <polygon id="cell-1" class="hex-cell outer" points="312.5,105.6 284.0,56.3 227.0,56.3 198.5,105.6 227.0,155.0 284.0,155.0"/>
+          <polygon id="cell-2" class="hex-cell outer" points="312.5,204.4 284.0,155.0 227.0,155.0 198.5,204.4 227.0,253.7 284.0,253.7"/>
+          <polygon id="cell-3" class="hex-cell outer" points="227.0,253.7 198.5,204.4 141.5,204.4 113.0,253.7 141.5,303.1 198.5,303.1"/>
+          <polygon id="cell-4" class="hex-cell outer" points="141.5,204.4 113.0,155.0 56.0,155.0 27.5,204.4 56.0,253.7 113.0,253.7"/>
+          <polygon id="cell-5" class="hex-cell outer" points="141.5,105.6 113.0,56.3 56.0,56.3 27.5,105.6 56.0,155.0 113.0,155.0"/>
+          <!-- Center cell (drawn last, on top) -->
+          <polygon id="cell-center" class="hex-cell center" points="227.0,155.0 198.5,105.6 141.5,105.6 113.0,155.0 141.5,204.4 198.5,204.4"/>
+          <!-- Letter labels (positioned at geometric centers) -->
+          <text id="letter-0" class="hex-letter" x="170" y="56.3" text-anchor="middle" dominant-baseline="central">B</text>
+          <text id="letter-1" class="hex-letter" x="255.5" y="105.6" text-anchor="middle" dominant-baseline="central">C</text>
+          <text id="letter-2" class="hex-letter" x="255.5" y="204.4" text-anchor="middle" dominant-baseline="central">D</text>
+          <text id="letter-3" class="hex-letter" x="170" y="249.2" text-anchor="middle" dominant-baseline="central">E</text>
+          <text id="letter-4" class="hex-letter" x="84.5" y="204.4" text-anchor="middle" dominant-baseline="central">F</text>
+          <text id="letter-5" class="hex-letter" x="84.5" y="105.6" text-anchor="middle" dominant-baseline="central">G</text>
+          <text id="letter-center" class="hex-letter center-letter" x="170" y="155" text-anchor="middle" dominant-baseline="central">A</text>
+        </svg>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button id="btn-delete" class="ctrl-btn">Delete</button>
+        <button id="btn-hints" class="ctrl-btn icon-ctrl" aria-label="Hints">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </button>
+        <button id="btn-shuffle" class="ctrl-btn icon-ctrl" aria-label="Shuffle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+            <line x1="4" y1="4" x2="9" y2="9"/>
+          </svg>
+        </button>
+        <button id="btn-enter" class="ctrl-btn">Enter</button>
+      </div>
+    </main>
+
+    <!-- Hints Overlay -->
+    <div id="hints-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2>Hints</h2>
+          <button id="btn-hints-close" class="icon-btn" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div id="hints-content"></div>
+      </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2>Settings</h2>
+          <button id="btn-settings-close" class="icon-btn" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="setting-row">
+          <label for="toggle-dark">Dark Mode</label>
+          <button id="toggle-dark" class="toggle" role="switch" aria-checked="false">
+            <span class="toggle-knob"></span>
+          </button>
+        </div>
+        <div class="setting-row">
+          <button id="btn-history" class="text-btn">Game History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Overlay -->
+    <div id="history-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2>Game History</h2>
+          <button id="btn-history-close" class="icon-btn" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Solution Overlay -->
+    <div id="solution-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2>Solution</h2>
+          <button id="btn-solution-close" class="icon-btn" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div id="solution-content"></div>
+        <div class="solution-actions">
+          <button id="btn-next-puzzle" class="primary-btn">Next Puzzle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Complete Modal -->
+    <div id="complete-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="overlay-header">
+          <h2>Congratulations!</h2>
+        </div>
+        <div id="complete-message"></div>
+        <div class="solution-actions">
+          <button id="btn-reveal-missed" class="text-btn">Show missed words</button>
+          <button id="btn-next-after-complete" class="primary-btn">Next Puzzle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
