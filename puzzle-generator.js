@@ -1,37 +1,26 @@
 /**
  * Spelling Bee Puzzle Generator
- * Generates puzzles on-the-fly from a word list
+ * Generates puzzles on-the-fly from the word list in words.js
  */
 
 class PuzzleGenerator {
   constructor() {
-    this.words = [];
+    this.words = window.WORDS;
     this.wordsByLetterSet = new Map();
     this.loaded = false;
+    this._indexWords();
   }
 
-  async loadWords(url = 'words.json') {
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      this.words = data.words;
-      
-      // Index words by their unique letter set for pangram detection
-      for (const word of this.words) {
-        const unique = [...new Set(word)].sort().join('');
-        if (!this.wordsByLetterSet.has(unique)) {
-          this.wordsByLetterSet.set(unique, []);
-        }
-        this.wordsByLetterSet.get(unique).push(word);
+  _indexWords() {
+    for (const word of this.words) {
+      const unique = [...new Set(word)].sort().join('');
+      if (!this.wordsByLetterSet.has(unique)) {
+        this.wordsByLetterSet.set(unique, []);
       }
-      
-      this.loaded = true;
-      console.log(`Loaded ${this.words.length} words`);
-      return true;
-    } catch (err) {
-      console.error('Failed to load word list:', err);
-      return false;
+      this.wordsByLetterSet.get(unique).push(word);
     }
+    this.loaded = true;
+    console.log('Loaded ' + this.words.length + ' words');
   }
 
   /**
@@ -54,7 +43,6 @@ class PuzzleGenerator {
       requirePangram = true
     } = options;
 
-    // Find all7-letter sets that have at least one pangram
     const letterSets = [];
     for (const [key, words] of this.wordsByLetterSet) {
       if (key.length === 7) {
@@ -67,30 +55,25 @@ class PuzzleGenerator {
       return null;
     }
 
-    // Shuffle letter sets for randomness
     const shuffled = letterSets.sort(() => Math.random() - 0.5);
 
     for (const key of shuffled) {
       const letters = key.split('');
       
-      // Try each letter as center
       for (const center of letters) {
         const answers = this.findAnswers(letters, center);
         
-        // Check word count constraints
         if (answers.length < minWords || answers.length > maxWords) continue;
         
         const pangrams = answers.filter(w => this.isPangram(w, letters));
         if (requirePangram && pangrams.length === 0) continue;
 
-        // Calculate points
         const totalPoints = answers.reduce((sum, w) => {
           const base = w.length === 4 ? 1 : w.length;
           const pangramBonus = pangrams.includes(w) ? 7 : 0;
           return sum + base + pangramBonus;
         }, 0);
 
-        // Sort answers by length then alphabetically
         const sortedAnswers = answers.sort((a, b) => a.length - b.length || a.localeCompare(b));
 
         return {
@@ -140,5 +123,4 @@ class PuzzleGenerator {
   }
 }
 
-// Export for use in app
 window.PuzzleGenerator = PuzzleGenerator;

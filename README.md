@@ -35,16 +35,6 @@ On Android:
 2. Tap the menu (3 dots)
 3. Select "Add to Home screen"
 
-## Regenerating Puzzles
-
-To generate new puzzles with a different random seed:
-
-```bash
-node generate-puzzles.mjs
-```
-
-Requires the word list at `/tmp/bee-words.txt` from [open-spelling-bee](https://github.com/Gyanreyer/open-spelling-bee).
-
 ## License
 
 Word list from [open-spelling-bee](https://github.com/Gyanreyer/open-spelling-bee).

@@ -55,23 +55,18 @@ function cacheDom() {
 }
 
 // ===== Initialization =====
-async function init() {
+function init() {
   cacheDom();
   loadTheme();
-  await loadPuzzles();
+  loadPuzzles();
   loadState();
   setupEventListeners();
   startPuzzle();
 }
 
-async function loadPuzzles() {
+function loadPuzzles() {
   try {
     generator = new PuzzleGenerator();
-    const success = await generator.loadWords();
-    if (!success) {
-      showMessage('Failed to load word list', 'error');
-      return false;
-    }
     console.log('Puzzle generator ready');
     return true;
   } catch (err) {
