@@ -88,6 +88,11 @@ header h1 {
   letter-spacing: -0.5px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
 /* ===== Main Game Area ===== */
 #game-view {
   display: flex;
@@ -528,45 +533,6 @@ header h1 {
 }
 
 /* ===== Settings ===== */
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.toggle {
-  width: 50px;
-  height: 28px;
-  background: var(--border);
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s;
-}
-
-.toggle[aria-checked="true"] {
-  background: var(--accent);
-}
-
-.toggle-knob {
-  width: 22px;
-  height: 22px;
-  background: white;
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-.toggle[aria-checked="true"] .toggle-knob {
-  transform: translateX(22px);
-}
-
 .text-btn {
   background: none;
   border: none;

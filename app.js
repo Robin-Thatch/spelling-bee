@@ -41,14 +41,14 @@ function cacheDom() {
   els.currentRank = document.getElementById('current-rank');
   els.hintsOverlay = document.getElementById('hints-overlay');
   els.hintsContent = document.getElementById('hints-content');
-  els.settingsOverlay = document.getElementById('settings-overlay');
   els.historyOverlay = document.getElementById('history-overlay');
   els.historyList = document.getElementById('history-list');
   els.solutionOverlay = document.getElementById('solution-overlay');
   els.solutionContent = document.getElementById('solution-content');
   els.completeOverlay = document.getElementById('complete-overlay');
   els.completeMessage = document.getElementById('complete-message');
-  els.toggleDark = document.getElementById('toggle-dark');
+  els.btnTheme = document.getElementById('btn-theme');
+  els.btnHistory = document.getElementById('btn-history');
   els.btnGiveUp = document.getElementById('btn-give-up');
 }
 
@@ -97,9 +97,6 @@ function saveState() {
 function loadTheme() {
   const theme = localStorage.getItem(THEME_KEY) || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
-  if (els.toggleDark) {
-    els.toggleDark.setAttribute('aria-checked', theme === 'dark');
-  }
 }
 
 function toggleTheme() {
@@ -107,7 +104,6 @@ function toggleTheme() {
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem(THEME_KEY, next);
-  els.toggleDark.setAttribute('aria-checked', next === 'dark');
 }
 
 // ===== Puzzle Management =====
@@ -821,15 +817,11 @@ function setupEventListeners() {
   document.getElementById('btn-hints').addEventListener('click', showHints);
   document.getElementById('btn-hints-close').addEventListener('click', () => hideOverlay(els.hintsOverlay));
   
-  // Settings
-  document.getElementById('btn-settings').addEventListener('click', () => showOverlay(els.settingsOverlay));
-  document.getElementById('btn-settings-close').addEventListener('click', () => hideOverlay(els.settingsOverlay));
-  
-  // Dark mode toggle
-  els.toggleDark.addEventListener('click', toggleTheme);
+  // Theme toggle
+  els.btnTheme.addEventListener('click', toggleTheme);
   
   // History
-  document.getElementById('btn-history').addEventListener('click', showHistory);
+  els.btnHistory.addEventListener('click', showHistory);
   document.getElementById('btn-history-close').addEventListener('click', () => hideOverlay(els.historyOverlay));
   
   // Solution
