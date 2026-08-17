@@ -13,6 +13,7 @@ let state = {
   currentPuzzleId: 0,
   foundWords: [],
   score: 0,
+  currentPuzzle: null, // Saved puzzle data for persistence
   history: [], // Array of { puzzleId, letters, centerLetter, foundWords, score, maxPoints, rank, completed, revealedAt }
 };
 
@@ -119,21 +120,28 @@ function startPuzzle() {
     return;
   }
   
-  // Generate a new puzzle
-  currentPuzzle = generator.generate();
-  
-  if (!currentPuzzle) {
-    showMessage('Could not generate puzzle', 'error');
-    return;
+  // Check if we have a saved puzzle to restore
+  if (state.currentPuzzle) {
+    currentPuzzle = state.currentPuzzle;
+  } else {
+    // Generate a new puzzle
+    currentPuzzle = generator.generate();
+    
+    if (!currentPuzzle) {
+      showMessage('Could not generate puzzle', 'error');
+      return;
+    }
+    
+    // Save the puzzle to state for persistence
+    state.currentPuzzle = currentPuzzle;
+    state.currentPuzzleId++;
+    state.foundWords = [];
+    state.score = 0;
+    
+    // Store puzzle in history for reference
+    updateHistory();
+    saveState();
   }
-  
-  // New puzzle - reset state
-  state.currentPuzzleId++;
-  state.foundWords = [];
-  state.score = 0;
-  
-  // Store puzzle in history for reference
-  updateHistory();
   
   renderHive();
   renderScoreMarkers();
@@ -141,7 +149,6 @@ function startPuzzle() {
   updateFoundWords();
   inputValue = '';
   updateInput();
-  saveState();
 }
 
 function shuffleLetters() {
@@ -829,6 +836,9 @@ function giveUp() {
     existing.completed = true;
     existing.revealedAt = Date.now();
   }
+  
+  // Clear saved puzzle since game is over
+  state.currentPuzzle = null;
   saveState();
   
   // Show solution for current puzzle
@@ -863,6 +873,8 @@ function showComplete() {
     existing.completedAt = Date.now();
   }
   
+  // Clear saved puzzle since game is complete
+  state.currentPuzzle = null;
   saveState();
   showOverlay(els.completeOverlay);
 }
@@ -882,6 +894,8 @@ function revealMissedWords() {
 }
 
 function nextPuzzle() {
+  // Clear saved puzzle to generate a new one
+  state.currentPuzzle = null;
   state.currentPuzzleId++;
   saveState();
   hideOverlay(els.solutionOverlay);
