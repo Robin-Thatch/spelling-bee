@@ -86,12 +86,7 @@ function loadState() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      console.log('loadState: parsed state has currentPuzzle?', !!parsed.currentPuzzle);
-      console.log('loadState: parsed foundWords length', parsed.foundWords?.length);
       state = { ...state, ...parsed };
-      console.log('loadState: state.currentPuzzle exists?', !!state.currentPuzzle);
-    } else {
-      console.log('loadState: no saved state found');
     }
   } catch (err) {
     console.error('Failed to load state:', err);
@@ -100,8 +95,6 @@ function loadState() {
 
 function saveState() {
   try {
-    console.log('saveState: saving state.currentPuzzle?', !!state.currentPuzzle);
-    console.log('saveState: saving foundWords length', state.foundWords?.length);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
     console.error('Failed to save state:', err);
@@ -127,15 +120,10 @@ function startPuzzle() {
     return;
   }
   
-  console.log('startPuzzle: state.currentPuzzle exists?', !!state.currentPuzzle);
-  console.log('startPuzzle: state.foundWords length', state.foundWords?.length);
-  
   // Check if we have a saved puzzle to restore
   if (state.currentPuzzle) {
-    console.log('Restoring saved puzzle');
     currentPuzzle = state.currentPuzzle;
   } else {
-    console.log('Generating new puzzle');
     // Generate a new puzzle
     currentPuzzle = generator.generate();
     
