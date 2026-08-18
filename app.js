@@ -755,12 +755,8 @@ function showHistory() {
       <div class="history-item-rank">${entry.rank}</div>
     `;
     
-    // Click: resume if in-progress, show solution if completed
-    if (entry.completed || entry.revealedAt) {
-      div.addEventListener('click', () => showSolution(entry));
-    } else {
-      div.addEventListener('click', () => resumePuzzle(entry));
-    }
+    // Click to resume any game
+    div.addEventListener('click', () => resumePuzzle(entry));
     container.appendChild(div);
   });
   
@@ -769,15 +765,27 @@ function showHistory() {
 
 // ===== Solution =====
 function resumePuzzle(entry) {
+  // Save current game to history before switching
+  if (currentPuzzle) {
+    updateHistory();
+  }
+  
   // Restore puzzle state from history
   currentPuzzle = {
     letters: entry.letters,
     centerLetter: entry.centerLetter,
     answers: entry.answers,
     pangrams: entry.pangrams,
-    rankings: entry.rankings || currentPuzzle.rankings,
+    rankings: entry.rankings || (currentPuzzle ? currentPuzzle.rankings : []),
     maxPoints: entry.maxPoints,
   };
+  
+  // Mark this entry as in-progress again
+  const historyEntry = state.history.find(h => h.puzzleId === entry.puzzleId);
+  if (historyEntry) {
+    historyEntry.completed = false;
+    historyEntry.revealedAt = null;
+  }
   
   state.currentPuzzleId = entry.puzzleId;
   state.currentPuzzle = currentPuzzle;
