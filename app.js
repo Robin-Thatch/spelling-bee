@@ -823,7 +823,8 @@ function showSolution(entry, isGiveUp = false) {
       if (isFound) classes.push('found');
       if (!isFound) classes.push('missed');
       if (isPangram) classes.push('pangram');
-      html += `<span class="${classes.join(' ')}">${word}</span>`;
+      const displayWord = centerLetter ? highlightCenterLetterWithCenter(word.toUpperCase(), centerLetter) : word.toUpperCase();
+      html += `<span class="${classes.join(' ')}">${displayWord}</span>`;
     });
     html += '</div></div>';
   });
