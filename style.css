@@ -277,14 +277,14 @@ header h1 {
 
 /* ===== Honeycomb ===== */
 #hive {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  grid-template-rows: 0.3fr auto;
   flex: 1;
   padding: 4px 10px 0;
   touch-action: manipulation;
   position: relative;
   min-height: 0;
+  align-content: center;
 }
 
 #hive svg {
@@ -292,6 +292,7 @@ header h1 {
   max-width: 360px;
   height: auto;
   max-height: 100%;
+  justify-self: center;
 }
 
 .hex-cell {
@@ -357,7 +358,6 @@ header h1 {
 
 #input-area {
   text-align: center;
-  min-height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;

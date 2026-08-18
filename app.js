@@ -295,6 +295,8 @@ function submitWord() {
     updateScore();
     updateFoundWords();
     saveState();
+    inputValue = '';
+    updateInput();
   } else {
     showMessage('Not in word list', 'error');
     shakeInput();
