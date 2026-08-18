@@ -14,7 +14,11 @@
   <div id="app">
     <!-- Header -->
     <header>
-      <div style="width:40px"></div>
+      <div class="font-size-controls">
+        <button class="font-size-btn" data-size="14" aria-label="Small font size">S</button>
+        <button class="font-size-btn" data-size="17" aria-label="Medium font size">M</button>
+        <button class="font-size-btn" data-size="22" aria-label="Large font size">L</button>
+      </div>
       <h1>Spelling Bee</h1>
       <div class="header-actions">
         <button id="btn-history" class="icon-btn" aria-label="Game History">
@@ -63,7 +67,7 @@
       </div>
 
       <!-- Message -->
-      <div id="message" class="hidden"></div>
+      <div id="message"></div>
 
       <!-- Input -->
       <div id="recent-words-bar"></div>

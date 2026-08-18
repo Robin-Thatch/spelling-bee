@@ -20,6 +20,7 @@
   --rank-bar: #444;
   --pangram: #f7da21;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --found-words-font-size: 17px;
 }
 
 [data-theme="light"] {
@@ -100,6 +101,7 @@ header h1 {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .icon-btn {
@@ -123,23 +125,24 @@ header h1 {
 #score-area {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 0.5em;
+  padding: 0.6em 1em;
+  font-size: 14px;
 }
 
 #current-rank {
-  font-size: 14px;
+  font-size: 1em;
   font-weight: 600;
-  min-width: 80px;
+  min-width: 4.5em;
   text-align: right;
   color: var(--text-secondary);
 }
 
 #score-bar-container {
   flex: 1;
-  height: 8px;
+  height: 0.7em;
   background: var(--rank-bar);
-  border-radius: 4px;
+  border-radius: 0.35em;
   position: relative;
   overflow: visible;
 }
@@ -147,7 +150,7 @@ header h1 {
 #score-bar {
   height: 100%;
   background: var(--accent);
-  border-radius: 4px;
+  border-radius: 0.35em;
   width: 0%;
   transition: width 0.3s ease;
 }
@@ -163,11 +166,11 @@ header h1 {
 
 .score-marker {
   position: absolute;
-  top: -3px;
-  width: 14px;
-  height: 14px;
+  top: -0.25em;
+  width: 1.1em;
+  height: 1.1em;
   background: var(--rank-bar);
-  border: 2px solid var(--bg);
+  border: 0.15em solid var(--bg);
   border-radius: 50%;
   transform: translateX(-50%);
   z-index: 1;
@@ -178,9 +181,9 @@ header h1 {
 }
 
 #score-value {
-  font-size: 14px;
+  font-size: 1em;
   font-weight: 600;
-  min-width: 40px;
+  min-width: 2.5em;
   text-align: left;
   color: var(--text-secondary);
 }
@@ -209,7 +212,7 @@ header h1 {
   padding: 4px 10px;
   background: var(--found-bg);
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--found-words-font-size, 15px);
   text-transform: capitalize;
 }
 
@@ -238,16 +241,26 @@ header h1 {
 
 /* ===== Message ===== */
 #message {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 140px;
   text-align: center;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  min-height: 32px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
   transition: opacity 0.2s;
+  z-index: 50;
+  white-space: nowrap;
 }
 
-#message.hidden {
-  opacity: 0;
+#message.visible {
+  opacity: 1;
 }
 
 #message.error {
@@ -259,7 +272,7 @@ header h1 {
 }
 
 #message.info {
-  color: var(--text-secondary);
+  color: #e53935;
 }
 
 /* ===== Honeycomb ===== */
@@ -268,7 +281,7 @@ header h1 {
   justify-content: center;
   align-items: center;
   flex: 1;
-  padding: 12px 10px 0;
+  padding: 4px 10px 0;
   touch-action: manipulation;
   position: relative;
   min-height: 0;
@@ -315,7 +328,7 @@ header h1 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 2px 16px;
+  padding: 4px 16px;
   min-height: 24px;
   font-size: 13px;
   color: var(--text-secondary);
@@ -324,13 +337,17 @@ header h1 {
 }
 
 .recent-word {
-  color: var(--text-secondary);
+  padding: 4px 10px;
+  background: var(--found-bg);
+  border-radius: 12px;
+  font-size: var(--found-words-font-size, 15px);
   white-space: nowrap;
 }
 
 .recent-word.pangram {
-  color: var(--accent);
+  background: var(--accent);
   font-weight: 600;
+  color: #1a1a1a;
 }
 
 .recent-ellipsis {
@@ -348,7 +365,7 @@ header h1 {
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
-  padding: 4px 16px 0;
+  padding: 4px 16px;
 }
 
 #cursor {
@@ -745,7 +762,7 @@ header h1 {
   padding: 6px 12px;
   background: var(--bg-secondary);
   border-radius: 12px;
-  font-size: 14px;
+  font-size: var(--found-words-font-size, 15px);
   text-transform: capitalize;
 }
 
@@ -870,6 +887,65 @@ header h1 {
   animation: shake 0.4s ease;
 }
 
+.center-letter-highlight {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.solution-letters-bar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.solution-letters-bar .solution-letter {
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.solution-letters-bar .solution-letter.center {
+  background: var(--accent);
+  color: #1a1a1a;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-size-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.font-size-btn:active {
+  background: var(--border);
+}
+
+.font-size-btn.active {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-color: var(--accent);
+}
+
 /* ===== Give Up Area ===== */
 #give-up-area {
   text-align: center;
@@ -895,7 +971,7 @@ header h1 {
   }
   
   #score-area {
-    padding: 8px 16px;
+    padding: 0.5em 1em;
   }
   
   #controls {

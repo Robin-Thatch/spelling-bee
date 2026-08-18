@@ -6,6 +6,7 @@
 // ===== Constants =====
 const STORAGE_KEY = 'spelling-bee-state';
 const THEME_KEY = 'spelling-bee-theme';
+const FONT_SIZE_KEY = 'spelling-bee-font-size';
 const MAX_HISTORY = 5;
 
 // ===== State =====
@@ -55,9 +56,45 @@ function cacheDom() {
 }
 
 // ===== Initialization =====
+function highlightCenterLetterWithCenter(text, centerLetter) {
+  const center = centerLetter.toUpperCase();
+  return text.split('').map(ch => {
+    if (ch.toUpperCase() === center) {
+      return `<span class="center-letter-highlight">${ch}</span>`;
+    }
+    return ch;
+  }).join('');
+}
+
+function loadFontSize() {
+  const saved = localStorage.getItem(FONT_SIZE_KEY);
+  if (saved) {
+    document.documentElement.style.setProperty('--found-words-font-size', saved);
+    // Set active button
+    const numeric = parseInt(saved);
+    document.querySelectorAll('.font-size-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.size) === numeric);
+    });
+  } else {
+    // Default to medium (17px)
+    document.querySelector('.font-size-btn[data-size="17"]').classList.add('active');
+  }
+}
+
+function setFontSize(size) {
+  const value = size + 'px';
+  document.documentElement.style.setProperty('--found-words-font-size', value);
+  localStorage.setItem(FONT_SIZE_KEY, value);
+  // Update active state on buttons
+  document.querySelectorAll('.font-size-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+  });
+}
+
 function init() {
   cacheDom();
   loadTheme();
+  loadFontSize();
   loadPuzzles();
   loadState();
   setupEventListeners();
@@ -206,16 +243,14 @@ function submitWord() {
   if (word.length < 4) {
     showMessage('Too short', 'error');
     shakeInput();
-    inputValue = '';
-    updateInput();
+    setTimeout(() => { inputValue = ''; updateInput(); }, 500);
     return;
   }
   
   if (!word.includes(currentPuzzle.centerLetter)) {
     showMessage('Missing center letter', 'error');
     shakeInput();
-    inputValue = '';
-    updateInput();
+    setTimeout(() => { inputValue = ''; updateInput(); }, 500);
     return;
   }
   
@@ -224,15 +259,14 @@ function submitWord() {
   if (!word.split('').every(l => availableLetters.has(l))) {
     showMessage('Bad letters', 'error');
     shakeInput();
-    inputValue = '';
-    updateInput();
+    setTimeout(() => { inputValue = ''; updateInput(); }, 500);
     return;
   }
   
   if (state.foundWords.includes(word)) {
     showMessage('Already found', 'info');
-    inputValue = '';
-    updateInput();
+    shakeInput();
+    setTimeout(() => { inputValue = ''; updateInput(); }, 500);
     return;
   }
   
@@ -264,10 +298,8 @@ function submitWord() {
   } else {
     showMessage('Not in word list', 'error');
     shakeInput();
+    setTimeout(() => { inputValue = ''; updateInput(); }, 500);
   }
-  
-  inputValue = '';
-  updateInput();
 }
 
 function calculateWordPoints(word, isPangram) {
@@ -320,8 +352,19 @@ function getCurrentRank() {
 }
 
 // ===== UI Updates =====
+function highlightCenterLetter(text) {
+  if (!currentPuzzle) return text;
+  const center = currentPuzzle.centerLetter.toUpperCase();
+  return text.split('').map(ch => {
+    if (ch.toUpperCase() === center) {
+      return `<span class="center-letter-highlight">${ch}</span>`;
+    }
+    return ch;
+  }).join('');
+}
+
 function updateInput() {
-  els.inputText.textContent = inputValue.toUpperCase();
+  els.inputText.innerHTML = highlightCenterLetter(inputValue.toUpperCase());
   els.cursor.style.display = inputValue.length > 0 ? 'none' : 'inline';
 }
 
@@ -375,7 +418,7 @@ function updateFoundWords() {
     if (currentPuzzle.pangrams.includes(word)) {
       div.classList.add('pangram');
     }
-    div.textContent = word;
+    div.innerHTML = highlightCenterLetter(word.toUpperCase());
     container.appendChild(div);
   });
   
@@ -398,7 +441,7 @@ function updateRecentWords() {
     if (currentPuzzle.pangrams.includes(word)) {
       span.classList.add('pangram');
     }
-    span.textContent = word;
+    span.innerHTML = highlightCenterLetter(word.toUpperCase());
     bar.appendChild(span);
     
     // Add separator
@@ -430,20 +473,18 @@ function updateRecentWords() {
 
 function showMessage(text, type = 'info') {
   els.message.textContent = text;
-  els.message.className = type;
+  els.message.className = type + ' visible';
   
   clearTimeout(messageTimeout);
   messageTimeout = setTimeout(() => {
-    els.message.className = 'hidden';
+    els.message.className = '';
   }, 2000);
 }
 
 function shakeInput() {
   els.inputArea.classList.add('shake');
-  els.hive.classList.add('shake');
   setTimeout(() => {
     els.inputArea.classList.remove('shake');
-    els.hive.classList.remove('shake');
   }, 400);
 }
 
@@ -475,9 +516,17 @@ function showHints() {
     }
   });
   
+  // Letters bar at top
+  let html = '<div class="solution-letters-bar">';
+  currentPuzzle.letters.forEach(l => {
+    const isCenter = l === center;
+    html += `<span class="solution-letter${isCenter ? ' center' : ''}">${l.toUpperCase()}</span>`;
+  });
+  html += '</div>';
+
   // Build table HTML
   // Columns: lengths, Rows: letters
-  let html = '<table class="hints-table"><thead><tr><th></th>';
+  html += '<table class="hints-table"><thead><tr><th></th>';
   lengthLabels.forEach(l => {
     html += `<th>${l}</th>`;
   });
@@ -758,7 +807,19 @@ function showSolution(entry, isGiveUp = false) {
     pangrams: entry.pangrams || []
   };
   
-  let html = `
+  // Letters bar at top
+  const centerLetter = entry.centerLetter || (currentPuzzle && currentPuzzle.centerLetter);
+  let lettersHtml = '';
+  if (entry.letters) {
+    lettersHtml = '<div class="solution-letters-bar">';
+    entry.letters.forEach(l => {
+      const isCenter = l === centerLetter;
+      lettersHtml += `<span class="solution-letter${isCenter ? ' center' : ''}">${l.toUpperCase()}</span>`;
+    });
+    lettersHtml += '</div>';
+  }
+  
+  let html = lettersHtml + `
     <div class="solution-stats">
       <div class="solution-stat">
         <div class="solution-stat-value">${entry.foundWords.length}/${puzzle.answers.length}</div>
@@ -972,6 +1033,11 @@ function setupEventListeners() {
   
   // Theme toggle
   els.btnTheme.addEventListener('click', toggleTheme);
+  
+  // Font size controls
+  document.querySelectorAll('.font-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => setFontSize(parseInt(btn.dataset.size)));
+  });
   
   // History
   els.btnHistory.addEventListener('click', showHistory);
