@@ -407,10 +407,14 @@ function updateFoundWords() {
   
   if (state.foundWords.length === 0) return;
   
-  // Show newest first
-  const recent = [...state.foundWords].reverse();
+  const isExpanded = els.foundWords.classList.contains('expanded');
   
-  recent.forEach((word, i) => {
+  // Collapsed: newest first, Expanded: alphabetical
+  const words = isExpanded
+    ? [...state.foundWords].sort()
+    : [...state.foundWords].reverse();
+  
+  words.forEach((word, i) => {
     const span = document.createElement('span');
     span.className = 'word';
     if (currentPuzzle.pangrams.includes(word)) {
@@ -420,7 +424,7 @@ function updateFoundWords() {
     container.appendChild(span);
     
     // Add separator (hidden when expanded)
-    if (i < recent.length - 1) {
+    if (i < words.length - 1) {
       const sep = document.createElement('span');
       sep.className = 'word-sep';
       sep.textContent = '\u00b7';
@@ -982,6 +986,7 @@ function setupEventListeners() {
   els.foundToggle.addEventListener('click', () => {
     els.foundWords.classList.toggle('expanded');
     els.foundToggle.classList.toggle('expanded');
+    updateFoundWords();
   });
   
   // Hints
