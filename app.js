@@ -323,6 +323,7 @@ function updateHistory() {
       centerLetter: currentPuzzle.centerLetter,
       answers: currentPuzzle.answers,
       pangrams: currentPuzzle.pangrams,
+      rankings: currentPuzzle.rankings,
       foundWords: [...state.foundWords],
       score: state.score,
       maxPoints: currentPuzzle.maxPoints,
@@ -754,7 +755,12 @@ function showHistory() {
       <div class="history-item-rank">${entry.rank}</div>
     `;
     
-    div.addEventListener('click', () => showSolution(entry));
+    // Click: resume if in-progress, show solution if completed
+    if (entry.completed || entry.revealedAt) {
+      div.addEventListener('click', () => showSolution(entry));
+    } else {
+      div.addEventListener('click', () => resumePuzzle(entry));
+    }
     container.appendChild(div);
   });
   
@@ -762,6 +768,34 @@ function showHistory() {
 }
 
 // ===== Solution =====
+function resumePuzzle(entry) {
+  // Restore puzzle state from history
+  currentPuzzle = {
+    letters: entry.letters,
+    centerLetter: entry.centerLetter,
+    answers: entry.answers,
+    pangrams: entry.pangrams,
+    rankings: entry.rankings || currentPuzzle.rankings,
+    maxPoints: entry.maxPoints,
+  };
+  
+  state.currentPuzzleId = entry.puzzleId;
+  state.currentPuzzle = currentPuzzle;
+  state.foundWords = [...entry.foundWords];
+  state.score = entry.score;
+  state.pangramHintLevel = 0;
+  state.extraCharsRevealed = 0;
+  saveState();
+  
+  hideOverlay(els.historyOverlay);
+  renderHive();
+  renderScoreMarkers();
+  updateScore();
+  updateFoundWords();
+  inputValue = '';
+  updateInput();
+}
+
 function showSolution(entry, isGiveUp = false) {
   // Use puzzle data from entry (stored in history)
   const puzzle = {
