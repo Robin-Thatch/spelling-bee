@@ -34,7 +34,6 @@ function cacheDom() {
   els.inputArea = document.getElementById('input-area');
   els.inputText = document.getElementById('input-text');
   els.cursor = document.getElementById('cursor');
-  els.recentWordsBar = document.getElementById('recent-words-bar');
   els.message = document.getElementById('message');
   els.foundWords = document.getElementById('found-words');
   els.foundToggle = document.getElementById('btn-found-toggle');
@@ -406,69 +405,26 @@ function updateFoundWords() {
   const container = els.foundWords;
   container.innerHTML = '';
   
-  // Sort found words: pangrams first, then by length, then alphabetically
-  const sorted = [...state.foundWords].sort((a, b) => {
-    const aPangram = currentPuzzle.pangrams.includes(a);
-    const bPangram = currentPuzzle.pangrams.includes(b);
-    if (aPangram !== bPangram) return bPangram - aPangram;
-    return a.length - b.length || a.localeCompare(b);
-  });
-  
-  sorted.forEach(word => {
-    const div = document.createElement('div');
-    div.className = 'word';
-    if (currentPuzzle.pangrams.includes(word)) {
-      div.classList.add('pangram');
-    }
-    div.innerHTML = highlightCenterLetter(word.toUpperCase());
-    container.appendChild(div);
-  });
-  
-  updateRecentWords();
-}
-
-function updateRecentWords() {
-  if (!els.recentWordsBar) return;
-  els.recentWordsBar.innerHTML = '';
-  
   if (state.foundWords.length === 0) return;
   
-  // Show the most recent words (newest first, left-to-right)
+  // Show newest first
   const recent = [...state.foundWords].reverse();
-  const bar = els.recentWordsBar;
   
   recent.forEach((word, i) => {
     const span = document.createElement('span');
-    span.className = 'recent-word';
+    span.className = 'word';
     if (currentPuzzle.pangrams.includes(word)) {
       span.classList.add('pangram');
     }
     span.innerHTML = highlightCenterLetter(word.toUpperCase());
-    bar.appendChild(span);
+    container.appendChild(span);
     
-    // Add separator
+    // Add separator (hidden when expanded)
     if (i < recent.length - 1) {
       const sep = document.createElement('span');
+      sep.className = 'word-sep';
       sep.textContent = '\u00b7';
-      sep.style.opacity = '0.4';
-      bar.appendChild(sep);
-    }
-  });
-  
-  // After rendering, check if content overflows and trim oldest (end)
-  requestAnimationFrame(() => {
-    if (bar.scrollWidth > bar.clientWidth) {
-      // Content overflows — trim from the end (oldest words)
-      while (bar.scrollWidth > bar.clientWidth && bar.children.length > 1) {
-        // Remove last element
-        bar.removeChild(bar.lastElementChild);
-      }
-      
-      // Add ellipsis to indicate more words exist
-      const ellipsis = document.createElement('span');
-      ellipsis.className = 'recent-ellipsis';
-      ellipsis.textContent = '...';
-      bar.appendChild(ellipsis);
+      container.appendChild(sep);
     }
   });
 }
