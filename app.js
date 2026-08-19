@@ -460,9 +460,14 @@ function showHints() {
   
   // Build the hints table
   // Rows: the 7 letters
-  // Columns: word lengths (4,5,6,7,8,9,10+)
-  const lengths = [4, 5, 6, 7, 8, 9, 10];
-  const lengthLabels = ['4', '5', '6', '7', '8', '9', '10+'];
+  // Columns: word lengths present in this puzzle
+  const allLengths = [4, 5, 6, 7, 8, 9, 10];
+  const allLabels = ['4', '5', '6', '7', '8', '9', '10+'];
+
+  // Filter to only lengths that actually appear in the puzzle
+  const presentLengths = new Set(currentPuzzle.answers.map(w => Math.min(w.length, 10)));
+  const lengths = allLengths.filter(l => presentLengths.has(l));
+  const lengthLabels = allLabels.filter((_, i) => presentLengths.has(allLengths[i]));
   
   // Count answers by length and first letter
   const counts = {};
@@ -583,7 +588,8 @@ function showHints() {
   const sortedPairs = Object.entries(twoLetterCounts).sort((a, b) => a[0].localeCompare(b[0]));
   sortedPairs.forEach(([pair, count]) => {
     const found = twoLetterFound[pair] || 0;
-    const display = found > 0 ? `${found}/${count}` : `${count}`;
+    const remaining = count - found;
+    const display = found > 0 ? `${remaining}/${count}` : `${count}`;
     const className = found === count ? 'two-letter-item solved' : (found > 0 ? 'two-letter-item partial' : 'two-letter-item');
     html += `<div class="${className}">${pair}: ${display}</div>`;
   });
