@@ -510,6 +510,7 @@ function showHints() {
       const key = `${len}-${letter}`;
       const total = counts[key] || 0;
       const found = foundCounts[key] || 0;
+      const remaining = total - found;
       rowTotal += total;
       rowFound += found;
       
@@ -518,7 +519,7 @@ function showHints() {
       } else if (found === total) {
         html += `<td class="solved">${total} ✓</td>`;
       } else {
-        html += `<td class="partial">(${found}/${total})</td>`;
+        html += `<td class="partial">${remaining}/${total}</td>`;
       }
     });
     
@@ -528,7 +529,8 @@ function showHints() {
     } else if (rowFound === rowTotal) {
       html += `<td class="solved-total">${rowTotal} ✓</td>`;
     } else {
-      html += `<td class="total-cell">(${rowFound}/${rowTotal})</td>`;
+      const rowRemaining = rowTotal - rowFound;
+      html += `<td class="total-cell">${rowRemaining}/${rowTotal}</td>`;
     }
     
     html += '</tr>';
@@ -555,7 +557,8 @@ function showHints() {
     } else if (colFound === colTotal) {
       html += `<td class="solved-total">${colTotal} ✓</td>`;
     } else {
-      html += `<td class="total-cell">(${colFound}/${colTotal})</td>`;
+      const colRemaining = colTotal - colFound;
+      html += `<td class="total-cell">${colRemaining}/${colTotal}</td>`;
     }
   });
   
@@ -565,7 +568,8 @@ function showHints() {
   } else if (grandFound === grandTotal) {
     html += `<td class="solved-total">${grandTotal} ✓</td>`;
   } else {
-    html += `<td class="total-cell">(${grandFound}/${grandTotal})</td>`;
+    const grandRemaining = grandTotal - grandFound;
+    html += `<td class="total-cell">${grandRemaining}/${grandTotal}</td>`;
   }
   
   html += '</tr></tbody></table>';
@@ -876,7 +880,8 @@ function showSolution(entry, isGiveUp = false) {
       if (!isFound) classes.push('missed');
       if (isPangram) classes.push('pangram');
       const displayWord = centerLetter ? highlightCenterLetterWithCenter(word.toUpperCase(), centerLetter) : word.toUpperCase();
-      html += `<span class="${classes.join(' ')}">${displayWord}</span>`;
+      const dictUrl = `https://www.merriam-webster.com/dictionary/${encodeURIComponent(word)}`;
+      html += `<a class="${classes.join(' ')}" href="${dictUrl}" target="_blank" rel="noopener noreferrer" title="Look up '${word}' in dictionary">${displayWord}</a>`;
     });
     html += '</div></div>';
   });
