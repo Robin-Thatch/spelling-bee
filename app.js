@@ -441,14 +441,14 @@ function showMessage(text, type = 'info') {
   clearTimeout(messageTimeout);
   messageTimeout = setTimeout(() => {
     els.message.className = '';
-  }, 2000);
+  }, 2500);
 }
 
 function shakeInput() {
   els.inputArea.classList.add('shake');
   setTimeout(() => {
     els.inputArea.classList.remove('shake');
-  }, 400);
+  }, 500);
 }
 
 // ===== Hints =====
