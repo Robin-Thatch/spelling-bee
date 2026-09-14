@@ -466,6 +466,7 @@ header h1 {
   border: 1px solid var(--border);
   overflow: hidden;
   text-overflow: ellipsis;
+  background: var(--bg-secondary);
 }
 
 .hints-table th {
@@ -479,13 +480,13 @@ header h1 {
   font-weight: 600;
 }
 
-
-
 .hints-table td.partial {
-  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  color: var(--text);
 }
 
 .hints-table td.empty {
+  background: var(--bg-secondary);
   color: var(--text-secondary);
   opacity: 0.3;
 }
@@ -544,7 +545,7 @@ header h1 {
 }
 
 .two-letter-item.partial {
-  color: var(--text-secondary);
+  color: var(--text);
 }
 
 /* ===== Pangram Hints ===== */
@@ -776,6 +777,12 @@ header h1 {
 .solution-word.pangram.found {
   background: var(--success);
   color: white;
+}
+
+.solution-word.pangram.missed {
+  background: var(--pangram-bg);
+  color: #fff;
+  opacity: 0.7;
 }
 
 .solution-word.missed {
