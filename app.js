@@ -175,6 +175,9 @@ function startPuzzle() {
     state.currentPuzzleId++;
     state.foundWords = [];
     state.score = 0;
+    state.pangramHintLevel = 0;
+    state.extraCharsRevealed = 0;
+    state.cellHints = {};
     
     // Store puzzle in history for reference
     updateHistory();
@@ -1198,6 +1201,7 @@ function giveUp() {
   state.currentPuzzle = null;
   state.pangramHintLevel = 0;
   state.extraCharsRevealed = 0;
+  state.cellHints = {};
   saveState();
   
   // Show solution for current puzzle
@@ -1238,6 +1242,7 @@ function showComplete() {
   state.currentPuzzle = null;
   state.pangramHintLevel = 0;
   state.extraCharsRevealed = 0;
+  state.cellHints = {};
   saveState();
   showOverlay(els.completeOverlay);
 }
@@ -1262,6 +1267,7 @@ function nextPuzzle() {
   state.currentPuzzleId++;
   state.pangramHintLevel = 0;
   state.extraCharsRevealed = 0;
+  state.cellHints = {};
   saveState();
   hideOverlay(els.solutionOverlay);
   hideOverlay(els.completeOverlay);
