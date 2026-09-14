@@ -78,20 +78,25 @@ body {
 /* ===== Header ===== */
 header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 8px 16px;
   border-bottom: 1px solid var(--border);
+  position: relative;
 }
 
 header h1 {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .header-actions {
   display: flex;
+  margin-left: auto;
   gap: 4px;
 }
 
