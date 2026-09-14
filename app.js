@@ -1284,10 +1284,10 @@ function revealMissedWords() {
 }
 
 function nextPuzzle() {
-  // Save current hints to history before clearing
-  if (currentPuzzle) {
-    updateHistory();
-  }
+  // Don't call updateHistory() here — giveUp() and showComplete()
+  // already saved the hints to history before clearing them.
+  // Calling updateHistory() again would overwrite the saved hints
+  // with empty data since state.cellHints etc. are already reset.
   
   // Clear saved puzzle to generate a new one
   state.currentPuzzle = null;
