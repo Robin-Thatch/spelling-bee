@@ -326,6 +326,9 @@ function updateHistory() {
     existing.foundWords = [...state.foundWords];
     existing.score = state.score;
     existing.rank = getCurrentRank();
+    existing.pangramHintLevel = state.pangramHintLevel;
+    existing.extraCharsRevealed = state.extraCharsRevealed;
+    existing.cellHints = { ...state.cellHints };
   } else {
     state.history.push({
       puzzleId: state.currentPuzzleId,
@@ -338,6 +341,9 @@ function updateHistory() {
       score: state.score,
       maxPoints: currentPuzzle.maxPoints,
       rank: getCurrentRank(),
+      pangramHintLevel: state.pangramHintLevel,
+      extraCharsRevealed: state.extraCharsRevealed,
+      cellHints: { ...state.cellHints },
       completed: false,
       playedAt: Date.now(),
     });
@@ -1082,8 +1088,9 @@ function resumePuzzle(entry) {
   state.currentPuzzle = currentPuzzle;
   state.foundWords = [...entry.foundWords];
   state.score = entry.score;
-  state.pangramHintLevel = 0;
-  state.extraCharsRevealed = 0;
+  state.pangramHintLevel = entry.pangramHintLevel || 0;
+  state.extraCharsRevealed = entry.extraCharsRevealed || 0;
+  state.cellHints = entry.cellHints ? { ...entry.cellHints } : {};
   saveState();
   
   hideOverlay(els.historyOverlay);
