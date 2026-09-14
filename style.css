@@ -228,6 +228,16 @@ header h1 {
   text-transform: capitalize;
 }
 
+#found-words a.word {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+#found-words a.word:hover {
+  opacity: 0.8;
+}
+
 #found-words .word.pangram {
   background: var(--pangram-bg);
   font-weight: 600;
@@ -700,11 +710,16 @@ header h1 {
   background: var(--border);
 }
 
-.cell-hints-inline .reveal-btn:disabled {
+.cell-hints-inline .reveal-btn.add-to-solved {
   background: var(--success-light);
   color: var(--success);
   border-color: var(--success);
-  cursor: not-allowed;
+  cursor: pointer;
+}
+
+.cell-hints-inline .reveal-btn.add-to-solved:hover {
+  background: var(--success);
+  color: var(--bg);
 }
 
 /* ===== Cell Hints (Approach B - Overlay) ===== */
@@ -754,11 +769,16 @@ header h1 {
   background: var(--border);
 }
 
-#cell-hints-overlay .reveal-btn:disabled {
+#cell-hints-overlay .reveal-btn.add-to-solved {
   background: var(--success-light);
   color: var(--success);
   border-color: var(--success);
-  cursor: not-allowed;
+  cursor: pointer;
+}
+
+#cell-hints-overlay .reveal-btn.add-to-solved:hover {
+  background: var(--success);
+  color: var(--bg);
 }
 
 .cell-hint-summary {

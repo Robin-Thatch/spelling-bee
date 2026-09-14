@@ -432,13 +432,29 @@ function updateFoundWords() {
     : [...state.foundWords].reverse();
   
   words.forEach((word, i) => {
-    const span = document.createElement('span');
-    span.className = 'word';
-    if (currentPuzzle.pangrams.includes(word)) {
-      span.classList.add('pangram');
+    const isPangram = currentPuzzle.pangrams.includes(word);
+    const displayWord = highlightCenterLetter(word.toUpperCase());
+    
+    let el;
+    if (isExpanded) {
+      // Expanded: create clickable link to dictionary
+      el = document.createElement('a');
+      el.className = 'word';
+      el.href = `https://www.merriam-webster.com/dictionary/${encodeURIComponent(word)}`;
+      el.target = '_blank';
+      el.rel = 'noopener noreferrer';
+      el.title = `Look up '${word}' in dictionary`;
+    } else {
+      // Collapsed: plain span
+      el = document.createElement('span');
+      el.className = 'word';
     }
-    span.innerHTML = highlightCenterLetter(word.toUpperCase());
-    container.appendChild(span);
+    
+    if (isPangram) {
+      el.classList.add('pangram');
+    }
+    el.innerHTML = displayWord;
+    container.appendChild(el);
     
     // Add separator (hidden when expanded)
     if (i < words.length - 1) {
@@ -905,6 +921,38 @@ function revealNextLetter(key, wordIndex, word) {
   }
 }
 
+function addWordFromHints(word) {
+  // Add a fully revealed word to found words, as if typed manually
+  if (!currentPuzzle) return;
+  if (state.foundWords.includes(word)) return;
+  if (!currentPuzzle.answers.includes(word)) return;
+  
+  // Add to found words
+  state.foundWords.push(word);
+  
+  const isPangram = currentPuzzle.pangrams.includes(word);
+  const points = calculateWordPoints(word, isPangram);
+  state.score += points;
+  
+  // Update history
+  updateHistory();
+  
+  if (isPangram) {
+    showMessage('Pangram! +' + points, 'success');
+  } else {
+    showMessage('+' + points, 'success');
+  }
+  
+  // Check if puzzle is complete
+  if (state.foundWords.length === currentPuzzle.answers.length) {
+    setTimeout(() => showComplete(), 500);
+  }
+  
+  updateScore();
+  updateFoundWords();
+  saveState();
+}
+
 function generateWordPattern(word, isFound, revealedIndices) {
   if (isFound) {
     return `<span class="found">${word.toUpperCase()}</span>`;
@@ -943,7 +991,7 @@ function generateCellHintsHTML(letter, length, approach) {
     html += `<div class="cell-hint-word${isFound ? ' found' : ''}">`;
     html += `<span class="hint-pattern">${pattern}</span>`;
     if (!isFound) {
-      html += `<button class="reveal-btn" data-key="${key}" data-index="${index}" data-word="${word}" ${allRevealed ? 'disabled' : ''}>${allRevealed ? 'Complete' : 'Reveal'}</button>`;
+      html += `<button class="reveal-btn${allRevealed ? ' add-to-solved' : ''}" data-key="${key}" data-index="${index}" data-word="${word}">${allRevealed ? 'Add to solved' : 'Reveal'}</button>`;
     }
     html += '</div>';
   });
@@ -982,10 +1030,15 @@ function showCellHintsInline(letter, length) {
   // Add event listeners for reveal buttons
   container.querySelectorAll('.reveal-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const btnKey = e.target.dataset.key;
-      const btnIndex = parseInt(e.target.dataset.index);
       const btnWord = e.target.dataset.word;
-      revealNextLetter(btnKey, btnIndex, btnWord);
+      if (e.target.classList.contains('add-to-solved')) {
+        addWordFromHints(btnWord);
+        showHints(); // Refresh the hints grid
+      } else {
+        const btnKey = e.target.dataset.key;
+        const btnIndex = parseInt(e.target.dataset.index);
+        revealNextLetter(btnKey, btnIndex, btnWord);
+      }
       showCellHintsInline(letter, length);
     });
   });
@@ -1007,10 +1060,15 @@ function showCellHintsOverlay(letter, length) {
   // Add event listeners for reveal buttons
   content.querySelectorAll('.reveal-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const btnKey = e.target.dataset.key;
-      const btnIndex = parseInt(e.target.dataset.index);
       const btnWord = e.target.dataset.word;
-      revealNextLetter(btnKey, btnIndex, btnWord);
+      if (e.target.classList.contains('add-to-solved')) {
+        addWordFromHints(btnWord);
+        showHints(); // Refresh the hints grid
+      } else {
+        const btnKey = e.target.dataset.key;
+        const btnIndex = parseInt(e.target.dataset.index);
+        revealNextLetter(btnKey, btnIndex, btnWord);
+      }
       showCellHintsOverlay(letter, length);
     });
   });
