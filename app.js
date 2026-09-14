@@ -17,6 +17,7 @@ let state = {
   currentPuzzle: null, // Saved puzzle data for persistence
   pangramHintLevel: 0, // 0-6, then extra chars revealed after level 6
   extraCharsRevealed: 0, // Additional characters revealed after level 6
+  cellHints: {}, // Cell-specific hints: { "A-8": { wordIndex: 0, level: 2 }, ... }
   history: [], // Array of { puzzleId, letters, centerLetter, foundWords, score, maxPoints, rank, completed, revealedAt }
 };
 
@@ -49,6 +50,8 @@ function cacheDom() {
   els.solutionContent = document.getElementById('solution-content');
   els.completeOverlay = document.getElementById('complete-overlay');
   els.completeMessage = document.getElementById('complete-message');
+  els.cellHintsOverlay = document.getElementById('cell-hints-overlay');
+  els.cellHintsContent = document.getElementById('cell-hints-content');
   els.btnTheme = document.getElementById('btn-theme');
   els.btnHistory = document.getElementById('btn-history');
   els.btnGiveUp = document.getElementById('btn-give-up');
@@ -517,9 +520,9 @@ function showHints() {
       if (total === 0) {
         html += '<td class="empty">•</td>';
       } else if (found === total) {
-        html += `<td class="solved">${total} ✓</td>`;
+        html += `<td class="solved clickable" data-letter="${letter}" data-length="${len}">${total} ✓</td>`;
       } else {
-        html += `<td class="partial">${remaining}/${total}</td>`;
+        html += `<td class="partial clickable" data-letter="${letter}" data-length="${len}">${remaining}/${total}</td>`;
       }
     });
     
@@ -631,6 +634,15 @@ function showHints() {
     });
   }
   
+  // Add event listeners for clickable cells
+  els.hintsContent.querySelectorAll('.clickable').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const letter = cell.dataset.letter;
+      const length = parseInt(cell.dataset.length);
+      handleCellClick(letter, length);
+    });
+  });
+  
   showOverlay(els.hintsOverlay);
 }
 
@@ -728,6 +740,181 @@ function generatePangramHints() {
   }
   
   return html;
+}
+
+// ===== Cell Hints =====
+function getCellHintKey(letter, length) {
+  return `${letter}-${length}`;
+}
+
+function getWordsForCell(letter, length) {
+  if (!currentPuzzle) return [];
+  const len = length === 10 ? 10 : length; // 10+ maps to 10
+  return currentPuzzle.answers.filter(w => {
+    const wLen = Math.min(w.length, 10);
+    return w[0] === letter && wLen === len;
+  });
+}
+
+function getCellHintState(key) {
+  if (!state.cellHints[key]) {
+    state.cellHints[key] = {};
+  }
+  return state.cellHints[key];
+}
+
+function getWordHintLevel(key, wordIndex) {
+  const hintState = getCellHintState(key);
+  return hintState[wordIndex] || 0;
+}
+
+function revealNextLetter(key, wordIndex, word) {
+  const hintState = getCellHintState(key);
+  const currentLevel = hintState[wordIndex] || 0;
+  const maxLevel = word.length - 2; // First 2 letters always shown, so max is length-2
+  
+  if (currentLevel < maxLevel) {
+    hintState[wordIndex] = currentLevel + 1;
+    saveState();
+  }
+}
+
+function generateWordPattern(word, level, isFound) {
+  if (isFound) {
+    return `<span class="found">${word.toUpperCase()}</span>`;
+  }
+  
+  // Level 0: Show first 2 letters (first is known, second is a hint)
+  // Level 1+: Show first 2 letters + level more letters
+  
+  // Generate consistent reveal order for letters after the first 2
+  const indices = Array.from({length: word.length - 2}, (_, i) => i + 2); // Indices 2, 3, 4, ...
+  const seed = word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const shuffled = indices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+  
+  // Always show first 2 letters, then reveal in shuffled order
+  const revealSet = new Set([0, 1]);
+  const charsToReveal = Math.min(level, word.length - 2);
+  for (let i = 0; i < charsToReveal; i++) {
+    revealSet.add(shuffled[i]);
+  }
+  
+  return word.split('').map((c, i) => {
+    if (revealSet.has(i)) {
+      return `<span class="revealed">${c.toUpperCase()}</span>`;
+    }
+    return '<span class="hidden">_</span>';
+  }).join(' ');
+}
+
+function generateCellHintsHTML(letter, length, approach) {
+  const words = getWordsForCell(letter, length);
+  const key = getCellHintKey(letter, length);
+  const hintState = getCellHintState(key);
+  
+  if (words.length === 0) return '';
+  
+  let html = '';
+  if (approach === 'overlay') {
+    html += `<div class="cell-hint-summary">${words.length} word${words.length > 1 ? 's' : ''} starting with ${letter.toUpperCase()} (${length} letters)</div>`;
+  }
+  
+  words.forEach((word, index) => {
+    const isFound = state.foundWords.includes(word);
+    const level = hintState[index] || 0;
+    const maxLevel = word.length - 2; // First 2 letters always shown, so max is length-2
+    const allRevealed = level >= maxLevel;
+    
+    const pattern = generateWordPattern(word, level, isFound);
+    
+    html += `<div class="cell-hint-word${isFound ? ' found' : ''}">`;
+    html += `<span class="hint-pattern">${pattern}</span>`;
+    if (!isFound) {
+      html += `<button class="reveal-btn" data-key="${key}" data-index="${index}" data-word="${word}" ${allRevealed ? 'disabled' : ''}>${allRevealed ? 'Complete' : 'Reveal'}</button>`;
+    }
+    html += '</div>';
+  });
+  
+  return html;
+}
+
+function showCellHintsInline(letter, length) {
+  // Approach A: Show inline below hints table
+  const existing = document.getElementById('cell-hints-inline-container');
+  if (existing) existing.remove();
+  
+  const words = getWordsForCell(letter, length);
+  if (words.length === 0) return;
+  
+  const container = document.createElement('div');
+  container.id = 'cell-hints-inline-container';
+  container.className = 'cell-hints-inline';
+  
+  const key = getCellHintKey(letter, length);
+  let html = `<h3>${letter.toUpperCase()} × ${length} letters</h3>`;
+  html += generateCellHintsHTML(letter, length, 'inline');
+  
+  container.innerHTML = html;
+  
+  // Insert after the hints table but before two-letter section
+  const hintsTable = els.hintsContent.querySelector('.hints-table');
+  const twoLetterSection = els.hintsContent.querySelector('.two-letter-section');
+  
+  if (twoLetterSection) {
+    els.hintsContent.insertBefore(container, twoLetterSection);
+  } else {
+    els.hintsContent.appendChild(container);
+  }
+  
+  // Add event listeners for reveal buttons
+  container.querySelectorAll('.reveal-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const btnKey = e.target.dataset.key;
+      const btnIndex = parseInt(e.target.dataset.index);
+      const btnWord = e.target.dataset.word;
+      revealNextLetter(btnKey, btnIndex, btnWord);
+      showCellHintsInline(letter, length);
+    });
+  });
+}
+
+function showCellHintsOverlay(letter, length) {
+  // Approach B: Show in separate overlay
+  const words = getWordsForCell(letter, length);
+  if (words.length === 0) return;
+  
+  const title = document.getElementById('cell-hints-title');
+  const content = document.getElementById('cell-hints-content');
+  
+  title.textContent = `${letter.toUpperCase()} × ${length} letters`;
+  
+  let html = generateCellHintsHTML(letter, length, 'overlay');
+  content.innerHTML = html;
+  
+  // Add event listeners for reveal buttons
+  content.querySelectorAll('.reveal-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const btnKey = e.target.dataset.key;
+      const btnIndex = parseInt(e.target.dataset.index);
+      const btnWord = e.target.dataset.word;
+      revealNextLetter(btnKey, btnIndex, btnWord);
+      showCellHintsOverlay(letter, length);
+    });
+  });
+  
+  showOverlay(els.cellHintsOverlay);
+}
+
+// For testing: switch between approaches
+// Set to 'inline' or 'overlay'
+const CELL_HINTS_APPROACH = 'overlay';
+
+function handleCellClick(letter, length) {
+  if (CELL_HINTS_APPROACH === 'inline') {
+    showCellHintsInline(letter, length);
+  } else {
+    showCellHintsOverlay(letter, length);
+  }
 }
 
 // ===== History =====
@@ -1062,6 +1249,9 @@ function setupEventListeners() {
   
   // Solution
   document.getElementById('btn-solution-close').addEventListener('click', () => hideOverlay(els.solutionOverlay));
+  
+  // Cell Hints Overlay
+  document.getElementById('btn-cell-hints-close').addEventListener('click', () => hideOverlay(els.cellHintsOverlay));
   
   // Give Up / Reveal Solution
   els.btnGiveUp.addEventListener('click', giveUp);

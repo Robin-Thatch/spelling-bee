@@ -485,6 +485,15 @@ header h1 {
   color: var(--text);
 }
 
+.hints-table td.clickable {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.hints-table td.clickable:hover {
+  background: var(--border);
+}
+
 .hints-table td.empty {
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -625,6 +634,136 @@ header h1 {
   display: block;
   margin: 0 auto;
   padding: 8px 16px;
+}
+
+/* ===== Cell Hints (Approach A - Inline) ===== */
+.cell-hints-inline {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.cell-hints-inline h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.cell-hints-inline .cell-hint-word {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cell-hints-inline .cell-hint-word:last-child {
+  border-bottom: none;
+}
+
+.cell-hints-inline .hint-pattern {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.cell-hints-inline .hint-pattern .revealed {
+  color: var(--text);
+}
+
+.cell-hints-inline .hint-pattern .hidden {
+  color: var(--text-secondary);
+}
+
+.cell-hints-inline .hint-pattern .found {
+  color: var(--success);
+}
+
+.cell-hints-inline .reveal-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-secondary);
+  border: 1px solid var(--hex-stroke);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cell-hints-inline .reveal-btn:active {
+  background: var(--border);
+}
+
+.cell-hints-inline .reveal-btn:disabled {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: var(--success);
+  cursor: not-allowed;
+}
+
+/* ===== Cell Hints (Approach B - Overlay) ===== */
+#cell-hints-overlay .cell-hint-word {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+#cell-hints-overlay .cell-hint-word:last-child {
+  border-bottom: none;
+}
+
+#cell-hints-overlay .hint-pattern {
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+
+#cell-hints-overlay .hint-pattern .revealed {
+  color: var(--text);
+}
+
+#cell-hints-overlay .hint-pattern .hidden {
+  color: var(--text-secondary);
+}
+
+#cell-hints-overlay .hint-pattern .found {
+  color: var(--success);
+}
+
+#cell-hints-overlay .reveal-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-secondary);
+  border: 1px solid var(--hex-stroke);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#cell-hints-overlay .reveal-btn:active {
+  background: var(--border);
+}
+
+#cell-hints-overlay .reveal-btn:disabled {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: var(--success);
+  cursor: not-allowed;
+}
+
+.cell-hint-summary {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.cell-hint-word.found {
+  opacity: 0.7;
 }
 
 /* ===== Settings ===== */
