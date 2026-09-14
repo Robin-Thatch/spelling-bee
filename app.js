@@ -721,18 +721,24 @@ function generatePangramHints() {
       }
       
       // First 3 letters are always shown
-      // After level 6, each click reveals one more random character
+      // After level 6, each click reveals one more character
       const knownPrefix = 3;
       const totalExtraNeeded = p.length - knownPrefix;
       const extraToReveal = Math.min(state.extraCharsRevealed, totalExtraNeeded);
       
-      // Get remaining indices (after prefix) and shuffle for consistent random reveal
+      // Get remaining indices (after prefix) and order based on settings
       const remainingIndices = Array.from({length: p.length - knownPrefix}, (_, i) => i + knownPrefix);
-      // Use a seeded shuffle based on word to keep consistency between renders
-      const seed = p.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const shuffled = remainingIndices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+      let revealOrder;
+      if (settings.revealStyle === 'sequential') {
+        // Sequential: reveal left to right
+        revealOrder = remainingIndices;
+      } else {
+        // Random: consistent random order based on word
+        const seed = p.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        revealOrder = remainingIndices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+      }
       
-      const revealIndices = new Set([0, 1, 2, ...shuffled.slice(0, extraToReveal)]);
+      const revealIndices = new Set([0, 1, 2, ...revealOrder.slice(0, extraToReveal)]);
       
       const partial = p.split('').map((c, i) => 
         revealIndices.has(i) ? c.toUpperCase() : '_'
