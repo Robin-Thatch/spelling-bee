@@ -16,10 +16,9 @@ let state = {
   foundWords: [],
   score: 0,
   currentPuzzle: null, // Saved puzzle data for persistence
-  pangramHintLevel: 0, // 0-6, then extra chars revealed after level 6
-  extraCharsRevealed: 0, // Additional characters revealed after level 6
-  pangramRevealOrder: null, // Stored reveal order for pangram letters after prefix
-  cellHints: {}, // Cell-specific hints: { "A-8": { wordIndex: { level: 2, order: [...] } }, ... }
+  pangramHintLevel: 0, // 0-5 for general hints, 6+ for letter reveal mode
+  pangramRevealed: [], // Array of arrays: [[0,1,2,5], [0,1,3]] - revealed indices per pangram
+  cellHints: {}, // Cell-specific hints: { "A-8": { wordIndex: { revealed: [0,1,3] } } }
   history: [], // Array of { puzzleId, letters, centerLetter, foundWords, score, maxPoints, rank, completed, revealedAt }
 };
 
@@ -177,8 +176,7 @@ function startPuzzle() {
     state.foundWords = [];
     state.score = 0;
     state.pangramHintLevel = 0;
-    state.extraCharsRevealed = 0;
-    state.pangramRevealOrder = null;
+    state.pangramRevealed = [];
     state.cellHints = {};
     
     // Store puzzle in history for reference
@@ -329,9 +327,8 @@ function updateHistory() {
     existing.score = state.score;
     existing.rank = getCurrentRank();
     existing.pangramHintLevel = state.pangramHintLevel;
-    existing.extraCharsRevealed = state.extraCharsRevealed;
-    existing.pangramRevealOrder = state.pangramRevealOrder ? [...state.pangramRevealOrder] : null;
-    existing.cellHints = { ...state.cellHints };
+    existing.pangramRevealed = state.pangramRevealed ? state.pangramRevealed.map(r => [...r]) : [];
+    existing.cellHints = JSON.parse(JSON.stringify(state.cellHints));
   } else {
     state.history.push({
       puzzleId: state.currentPuzzleId,
@@ -345,9 +342,8 @@ function updateHistory() {
       maxPoints: currentPuzzle.maxPoints,
       rank: getCurrentRank(),
       pangramHintLevel: state.pangramHintLevel,
-      extraCharsRevealed: state.extraCharsRevealed,
-      pangramRevealOrder: state.pangramRevealOrder ? [...state.pangramRevealOrder] : null,
-      cellHints: { ...state.cellHints },
+      pangramRevealed: state.pangramRevealed ? state.pangramRevealed.map(r => [...r]) : [],
+      cellHints: JSON.parse(JSON.stringify(state.cellHints)),
       completed: false,
       playedAt: Date.now(),
     });
@@ -626,9 +622,12 @@ function showHints() {
   html += generatePangramHints();
   html += '</div>';
   
-  // Show button if we haven't revealed all characters yet
-  const maxRevealNeeded = getMaxRevealNeeded();
-  const showButton = state.pangramHintLevel < 6 || (state.pangramHintLevel >= 6 && state.extraCharsRevealed < maxRevealNeeded);
+  // Show button if we're in letter reveal mode and not all are fully revealed
+  const hasUnrevealedPangrams = state.pangramHintLevel >= 6 && currentPuzzle.pangrams.some((p, i) => {
+    const revealed = state.pangramRevealed[i] || [0, 1, 2];
+    return revealed.length < p.length;
+  });
+  const showButton = state.pangramHintLevel < 6 || hasUnrevealedPangrams;
   
   if (showButton) {
     html += '<button id="btn-pangram-hint" class="text-btn pangram-hint-btn">Reveal next hint</button>';
@@ -644,10 +643,22 @@ function showHints() {
       if (state.pangramHintLevel < 6) {
         state.pangramHintLevel++;
       } else {
-        state.extraCharsRevealed++;
+        // Reveal one more letter for each pangram
+        currentPuzzle.pangrams.forEach((pangram, i) => {
+          if (!state.pangramRevealed[i]) {
+            state.pangramRevealed[i] = [0, 1, 2]; // Start with first3 letters
+          }
+          const revealed = state.pangramRevealed[i];
+          if (revealed.length < pangram.length) {
+            const nextIndex = getNextRevealIndex(pangram, revealed);
+            if (nextIndex !== -1) {
+              revealed.push(nextIndex);
+            }
+          }
+        });
       }
-      saveState(); // Persist hint level
-      showHints(); // Re-render hints with new level
+      saveState();
+      showHints();
     });
   }
   
@@ -661,12 +672,6 @@ function showHints() {
   });
   
   showOverlay(els.hintsOverlay);
-}
-
-function getMaxRevealNeeded() {
-  if (!currentPuzzle) return 0;
-  // Return the maximum number of extra chars needed across all pangrams
-  return Math.max(...currentPuzzle.pangrams.map(p => p.length - 3)); // -3 for the prefix already shown
 }
 
 function generatePangramHints() {
@@ -726,39 +731,25 @@ function generatePangramHints() {
   
   // Level 6+: Partial reveal with progressive disclosure
   if (state.pangramHintLevel >= 6) {
-    // Store reveal order on first entry to level6 if not already stored
-    if (!state.pangramRevealOrder) {
-      // Generate a single reveal order for all pangrams (use first pangram for seed)
-      const firstPangram = pangrams[0];
-      const knownPrefix = 3;
-      const remainingIndices = Array.from({length: firstPangram.length - knownPrefix}, (_, i) => i + knownPrefix);
-      
-      if (settings.revealStyle === 'sequential') {
-        state.pangramRevealOrder = remainingIndices;
-      } else {
-        const seed = firstPangram.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        state.pangramRevealOrder = remainingIndices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
-      }
+    // Initialize revealed indices for pangrams if not already done
+    if (!state.pangramRevealed || state.pangramRevealed.length === 0) {
+      state.pangramRevealed = pangrams.map(() => [0, 1, 2]); // Start with first3 letters
       saveState();
     }
     
     html += '<div class="pangram-hint-level"><span class="hint-label">Partial:</span> ';
-    html += pangrams.map(p => {
+    html += pangrams.map((p, i) => {
       const isFound = state.foundWords.includes(p);
       if (isFound) {
         return `<span class="hint-word found">${p.toUpperCase()}</span>`;
       }
       
-      // First 3 letters are always shown
-      // After level 6, each click reveals one more character using stored order
-      const knownPrefix = 3;
-      const totalExtraNeeded = p.length - knownPrefix;
-      const extraToReveal = Math.min(state.extraCharsRevealed, totalExtraNeeded);
+      // Use stored revealed indices
+      const revealed = state.pangramRevealed[i] || [0, 1, 2];
+      const revealSet = new Set(revealed);
       
-      const revealIndices = new Set([0, 1, 2, ...state.pangramRevealOrder.slice(0, extraToReveal)]);
-      
-      const partial = p.split('').map((c, i) => 
-        revealIndices.has(i) ? c.toUpperCase() : '_'
+      const partial = p.split('').map((c, idx) => 
+        revealSet.has(idx) ? c.toUpperCase() : '_'
       ).join('');
       
       return `<span class="hint-word partial">${partial}</span>`;
@@ -872,65 +863,55 @@ function getCellHintState(key) {
 function getWordHintState(key, wordIndex) {
   const hintState = getCellHintState(key);
   if (!hintState[wordIndex]) {
-    hintState[wordIndex] = { level: 0, order: null };
+    hintState[wordIndex] = { revealed: [0, 1] }; // Start with first 2 letters revealed
   }
   return hintState[wordIndex];
 }
 
 function getWordHintLevel(key, wordIndex) {
   const wordState = getWordHintState(key, wordIndex);
-  return wordState.level || 0;
+  return wordState.revealed ? wordState.revealed.length - 2 : 0; // Subtract the2 always-shown letters
 }
 
-function getRevealOrder(word) {
-  // Generate reveal order based on current setting
-  const indices = Array.from({length: word.length - 2}, (_, i) => i + 2);
+function getNextRevealIndex(word, revealedIndices) {
+  // Get indices that haven't been revealed yet (excluding first2)
+  const allIndices = Array.from({length: word.length}, (_, i) => i);
+  const unrevealed = allIndices.filter(i => i >= 2 && !revealedIndices.includes(i));
+  
+  if (unrevealed.length === 0) return -1;
+  
   if (settings.revealStyle === 'sequential') {
-    return indices;
+    // Sequential: return first unrevealed index in order
+    return unrevealed[0];
   } else {
-    // Random: consistent random order based on word
+    // Random: pick based on consistent seed
     const seed = word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return indices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+    const shuffled = [...unrevealed].sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+    return shuffled[0];
   }
 }
 
 function revealNextLetter(key, wordIndex, word) {
   const wordState = getWordHintState(key, wordIndex);
-  const currentLevel = wordState.level || 0;
-  const maxLevel = word.length - 2; // First 2 letters always shown, so max is length-2
+  const revealed = wordState.revealed || [0, 1];
+  const maxRevealed = word.length; // Can reveal all letters
   
-  if (currentLevel < maxLevel) {
-    // Store reveal order on first reveal if not already stored
-    if (!wordState.order) {
-      wordState.order = getRevealOrder(word);
+  if (revealed.length < maxRevealed) {
+    const nextIndex = getNextRevealIndex(word, revealed);
+    if (nextIndex !== -1) {
+      revealed.push(nextIndex);
+      saveState();
     }
-    wordState.level = currentLevel + 1;
-    saveState();
   }
 }
 
-function generateWordPattern(word, level, isFound, storedOrder) {
+function generateWordPattern(word, isFound, revealedIndices) {
   if (isFound) {
     return `<span class="found">${word.toUpperCase()}</span>`;
   }
   
-  // Level 0: Show first 2 letters (first is known, second is a hint)
-  // Level 1+: Show first 2 letters + level more letters
-  
-  // Use stored order if available, otherwise generate based on current setting
-  let revealOrder;
-  if (storedOrder) {
-    revealOrder = storedOrder;
-  } else {
-    revealOrder = getRevealOrder(word);
-  }
-  
-  // Always show first 2 letters, then reveal in chosen order
-  const revealSet = new Set([0, 1]);
-  const charsToReveal = Math.min(level, word.length - 2);
-  for (let i = 0; i < charsToReveal; i++) {
-    revealSet.add(revealOrder[i]);
-  }
+  // Show revealed letters, hide the rest
+  const revealSet = new Set(revealedIndices || [0, 1]);
   
   return word.split('').map((c, i) => {
     if (revealSet.has(i)) {
@@ -954,11 +935,10 @@ function generateCellHintsHTML(letter, length, approach) {
   words.forEach((word, index) => {
     const isFound = state.foundWords.includes(word);
     const wordState = getWordHintState(key, index);
-    const level = wordState.level || 0;
-    const maxLevel = word.length - 2; // First 2 letters always shown, so max is length-2
-    const allRevealed = level >= maxLevel;
+    const revealed = wordState.revealed || [0, 1];
+    const allRevealed = revealed.length >= word.length;
     
-    const pattern = generateWordPattern(word, level, isFound, wordState.order);
+    const pattern = generateWordPattern(word, isFound, revealed);
     
     html += `<div class="cell-hint-word${isFound ? ' found' : ''}">`;
     html += `<span class="hint-pattern">${pattern}</span>`;
@@ -1118,9 +1098,8 @@ function resumePuzzle(entry) {
   state.foundWords = [...entry.foundWords];
   state.score = entry.score;
   state.pangramHintLevel = entry.pangramHintLevel || 0;
-  state.extraCharsRevealed = entry.extraCharsRevealed || 0;
-  state.pangramRevealOrder = entry.pangramRevealOrder ? [...entry.pangramRevealOrder] : null;
-  state.cellHints = entry.cellHints ? { ...entry.cellHints } : {};
+  state.pangramRevealed = entry.pangramRevealed ? entry.pangramRevealed.map(r => [...r]) : [];
+  state.cellHints = entry.cellHints ? JSON.parse(JSON.stringify(entry.cellHints)) : {};
   saveState();
   
   hideOverlay(els.historyOverlay);
@@ -1227,6 +1206,9 @@ function showSolution(entry, isGiveUp = false) {
 function giveUp() {
   if (!currentPuzzle) return;
   
+  // Save current hints to history before clearing
+  updateHistory();
+  
   // Mark as completed/revealed in history
   const existing = state.history.find(h => h.puzzleId === state.currentPuzzleId);
   if (existing) {
@@ -1237,8 +1219,7 @@ function giveUp() {
   // Clear saved puzzle and hints since game is over
   state.currentPuzzle = null;
   state.pangramHintLevel = 0;
-  state.extraCharsRevealed = 0;
-  state.pangramRevealOrder = null;
+  state.pangramRevealed = [];
   state.cellHints = {};
   saveState();
   
@@ -1269,6 +1250,9 @@ function showComplete() {
     <p>You found all ${totalWords} words for ${totalPoints} points!</p>
   `;
   
+  // Save current hints to history before clearing
+  updateHistory();
+  
   // Mark as completed in history
   const existing = state.history.find(h => h.puzzleId === state.currentPuzzleId);
   if (existing) {
@@ -1279,8 +1263,7 @@ function showComplete() {
   // Clear saved puzzle and hints since game is complete
   state.currentPuzzle = null;
   state.pangramHintLevel = 0;
-  state.extraCharsRevealed = 0;
-  state.pangramRevealOrder = null;
+  state.pangramRevealed = [];
   state.cellHints = {};
   saveState();
   showOverlay(els.completeOverlay);
@@ -1301,12 +1284,16 @@ function revealMissedWords() {
 }
 
 function nextPuzzle() {
+  // Save current hints to history before clearing
+  if (currentPuzzle) {
+    updateHistory();
+  }
+  
   // Clear saved puzzle to generate a new one
   state.currentPuzzle = null;
   state.currentPuzzleId++;
   state.pangramHintLevel = 0;
-  state.extraCharsRevealed = 0;
-  state.pangramRevealOrder = null;
+  state.pangramRevealed = [];
   state.cellHints = {};
   saveState();
   hideOverlay(els.solutionOverlay);
