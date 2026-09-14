@@ -7,6 +7,7 @@
 const STORAGE_KEY = 'spelling-bee-state';
 const THEME_KEY = 'spelling-bee-theme';
 const FONT_SIZE_KEY = 'spelling-bee-font-size';
+const SETTINGS_KEY = 'spelling-bee-settings';
 const MAX_HISTORY = 5;
 
 // ===== State =====
@@ -25,6 +26,14 @@ let generator = null;
 let currentPuzzle = null;
 let inputValue = '';
 let messageTimeout = null;
+
+// Settings with defaults
+let settings = {
+  fontSize: 17,
+  theme: 'dark',
+  revealStyle: 'random', // 'random' or 'sequential'
+  cellHintsMode: 'overlay', // 'inline' or 'overlay'
+};
 
 // ===== DOM Elements =====
 const els = {};
@@ -52,7 +61,9 @@ function cacheDom() {
   els.completeMessage = document.getElementById('complete-message');
   els.cellHintsOverlay = document.getElementById('cell-hints-overlay');
   els.cellHintsContent = document.getElementById('cell-hints-content');
-  els.btnTheme = document.getElementById('btn-theme');
+  els.settingsOverlay = document.getElementById('settings-overlay');
+  els.settingsContent = document.getElementById('settings-content');
+  els.btnSettings = document.getElementById('btn-settings');
   els.btnHistory = document.getElementById('btn-history');
   els.btnGiveUp = document.getElementById('btn-give-up');
 }
@@ -68,35 +79,40 @@ function highlightCenterLetterWithCenter(text, centerLetter) {
   }).join('');
 }
 
-function loadFontSize() {
-  const saved = localStorage.getItem(FONT_SIZE_KEY);
-  if (saved) {
-    document.documentElement.style.setProperty('--found-words-font-size', saved);
-    // Set active button
-    const numeric = parseInt(saved);
-    document.querySelectorAll('.font-size-btn').forEach(btn => {
-      btn.classList.toggle('active', parseInt(btn.dataset.size) === numeric);
-    });
-  } else {
-    // Default to medium (17px)
-    document.querySelector('.font-size-btn[data-size="17"]').classList.add('active');
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      settings = { ...settings, ...JSON.parse(saved) };
+    }
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
+  
+  // Apply loaded settings
+  applyTheme(settings.theme);
+  applyFontSize(settings.fontSize);
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (err) {
+    console.error('Failed to save settings:', err);
   }
 }
 
-function setFontSize(size) {
-  const value = size + 'px';
-  document.documentElement.style.setProperty('--found-words-font-size', value);
-  localStorage.setItem(FONT_SIZE_KEY, value);
-  // Update active state on buttons
-  document.querySelectorAll('.font-size-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
-  });
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function applyFontSize(size) {
+  document.documentElement.style.setProperty('--found-words-font-size', size + 'px');
 }
 
 function init() {
   cacheDom();
-  loadTheme();
-  loadFontSize();
+  loadSettings();
   loadPuzzles();
   loadState();
   setupEventListeners();
@@ -133,18 +149,6 @@ function saveState() {
   } catch (err) {
     console.error('Failed to save state:', err);
   }
-}
-
-function loadTheme() {
-  const theme = localStorage.getItem(THEME_KEY) || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem(THEME_KEY, next);
 }
 
 // ===== Puzzle Management =====
@@ -742,6 +746,85 @@ function generatePangramHints() {
   return html;
 }
 
+// ===== Settings =====
+function showSettings() {
+  let html = '';
+  
+  // Theme section
+  html += '<div class="settings-section">';
+  html += '<h3>Theme</h3>';
+  html += '<div class="settings-row">';
+  html += '<span class="settings-label">Appearance</span>';
+  html += '<div class="settings-options">';
+  html += `<button class="settings-btn${settings.theme === 'dark' ? ' active' : ''}" data-setting="theme" data-value="dark">Dark</button>`;
+  html += `<button class="settings-btn${settings.theme === 'light' ? ' active' : ''}" data-setting="theme" data-value="light">Light</button>`;
+  html += '</div></div></div>';
+  
+  // Font size section
+  html += '<div class="settings-section">';
+  html += '<h3>Text Size</h3>';
+  html += '<div class="settings-row">';
+  html += '<span class="settings-label">Found words size</span>';
+  html += '<div class="settings-options">';
+  [14, 17, 22].forEach(size => {
+    html += `<button class="settings-btn${settings.fontSize === size ? ' active' : ''}" data-setting="fontSize" data-value="${size}">${size === 14 ? 'S' : size === 17 ? 'M' : 'L'}</button>`;
+  });
+  html += '</div></div></div>';
+  
+  // Reveal style section
+  html += '<div class="settings-section">';
+  html += '<h3>Letter Reveal Style</h3>';
+  html += '<div class="settings-row">';
+  html += '<span class="settings-label">Hint progression</span>';
+  html += '<div class="settings-options">';
+  html += `<button class="settings-btn${settings.revealStyle === 'random' ? ' active' : ''}" data-setting="revealStyle" data-value="random">Random</button>`;
+  html += `<button class="settings-btn${settings.revealStyle === 'sequential' ? ' active' : ''}" data-setting="revealStyle" data-value="sequential">Sequential</button>`;
+  html += '</div></div></div>';
+  
+  // Cell hints mode section
+  html += '<div class="settings-section">';
+  html += '<h3>Grid Cell Hints</h3>';
+  html += '<div class="settings-row">';
+  html += '<span class="settings-label">Display mode</span>';
+  html += '<div class="settings-options">';
+  html += `<button class="settings-btn${settings.cellHintsMode === 'inline' ? ' active' : ''}" data-setting="cellHintsMode" data-value="inline">Inline</button>`;
+  html += `<button class="settings-btn${settings.cellHintsMode === 'overlay' ? ' active' : ''}" data-setting="cellHintsMode" data-value="overlay">Overlay</button>`;
+  html += '</div></div></div>';
+  
+  els.settingsContent.innerHTML = html;
+  
+  // Add event listeners to settings buttons
+  els.settingsContent.querySelectorAll('.settings-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const setting = btn.dataset.setting;
+      const value = btn.dataset.value;
+      
+      // Update setting
+      if (setting === 'fontSize') {
+        settings[setting] = parseInt(value);
+      } else {
+        settings[setting] = value;
+      }
+      
+      // Apply the setting
+      switch (setting) {
+        case 'theme':
+          applyTheme(value);
+          break;
+        case 'fontSize':
+          applyFontSize(parseInt(value));
+          break;
+      }
+      
+      // Save and re-render
+      saveSettings();
+      showSettings(); // Re-render to update active states
+    });
+  });
+  
+  showOverlay(els.settingsOverlay);
+}
+
 // ===== Cell Hints =====
 function getCellHintKey(letter, length) {
   return `${letter}-${length}`;
@@ -787,16 +870,22 @@ function generateWordPattern(word, level, isFound) {
   // Level 0: Show first 2 letters (first is known, second is a hint)
   // Level 1+: Show first 2 letters + level more letters
   
-  // Generate consistent reveal order for letters after the first 2
-  const indices = Array.from({length: word.length - 2}, (_, i) => i + 2); // Indices 2, 3, 4, ...
-  const seed = word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const shuffled = indices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+  let revealOrder;
+  if (settings.revealStyle === 'sequential') {
+    // Sequential: reveal letters in order from left to right
+    revealOrder = Array.from({length: word.length - 2}, (_, i) => i + 2);
+  } else {
+    // Random: consistent random order based on word
+    const indices = Array.from({length: word.length - 2}, (_, i) => i + 2);
+    const seed = word.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    revealOrder = indices.sort((a, b) => ((a * 2654435761) ^ seed) - ((b * 2654435761) ^ seed));
+  }
   
-  // Always show first 2 letters, then reveal in shuffled order
+  // Always show first 2 letters, then reveal in chosen order
   const revealSet = new Set([0, 1]);
   const charsToReveal = Math.min(level, word.length - 2);
   for (let i = 0; i < charsToReveal; i++) {
-    revealSet.add(shuffled[i]);
+    revealSet.add(revealOrder[i]);
   }
   
   return word.split('').map((c, i) => {
@@ -905,12 +994,8 @@ function showCellHintsOverlay(letter, length) {
   showOverlay(els.cellHintsOverlay);
 }
 
-// For testing: switch between approaches
-// Set to 'inline' or 'overlay'
-const CELL_HINTS_APPROACH = 'overlay';
-
 function handleCellClick(letter, length) {
-  if (CELL_HINTS_APPROACH === 'inline') {
+  if (settings.cellHintsMode === 'inline') {
     showCellHintsInline(letter, length);
   } else {
     showCellHintsOverlay(letter, length);
@@ -1235,13 +1320,9 @@ function setupEventListeners() {
     hideOverlay(els.hintsOverlay);
   });
   
-  // Theme toggle
-  els.btnTheme.addEventListener('click', toggleTheme);
-  
-  // Font size controls
-  document.querySelectorAll('.font-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => setFontSize(parseInt(btn.dataset.size)));
-  });
+  // Settings
+  els.btnSettings.addEventListener('click', showSettings);
+  document.getElementById('btn-settings-close').addEventListener('click', () => hideOverlay(els.settingsOverlay));
   
   // History
   els.btnHistory.addEventListener('click', showHistory);
