@@ -316,6 +316,8 @@ header h1 {
   position: relative;
   min-height: 0;
   align-content: center;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 #hive svg {
@@ -332,6 +334,8 @@ header h1 {
   stroke-width: 4;
   cursor: pointer;
   transition: fill 0.1s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .hex-cell.center {

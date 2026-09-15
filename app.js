@@ -1372,17 +1372,34 @@ function hideOverlay(overlay) {
 
 // ===== Event Listeners =====
 function setupEventListeners() {
-  // Hive cell clicks
+  // Hive cell clicks - use touchstart for immediate mobile response,
+  // with click as fallback for desktop and accessibility
+  let lastTouchTime = 0;
+  
+  function handleCellInput(cell) {
+    const id = cell.id;
+    if (id === 'cell-center') {
+      addLetter(currentPuzzle.centerLetter);
+    } else {
+      const idx = parseInt(id.split('-')[1]);
+      const letter = document.getElementById(`letter-${idx}`).textContent.toLowerCase();
+      addLetter(letter);
+    }
+  }
+  
   document.querySelectorAll('.hex-cell').forEach(cell => {
-    cell.addEventListener('click', () => {
-      const id = cell.id;
-      if (id === 'cell-center') {
-        addLetter(currentPuzzle.centerLetter);
-      } else {
-        const idx = parseInt(id.split('-')[1]);
-        const letter = document.getElementById(`letter-${idx}`).textContent.toLowerCase();
-        addLetter(letter);
-      }
+    // touchstart fires immediately on tap - no 300ms delay
+    cell.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Prevent subsequent click event
+      lastTouchTime = Date.now();
+      handleCellInput(cell);
+    }, { passive: false });
+    
+    // click fallback for mouse/keyboard (desktop)
+    cell.addEventListener('click', (e) => {
+      // Skip if this was already handled by touchstart
+      if (Date.now() - lastTouchTime < 500) return;
+      handleCellInput(cell);
     });
   });
   
@@ -1399,10 +1416,23 @@ function setupEventListeners() {
     }
   });
   
-  // Buttons
-  document.getElementById('btn-delete').addEventListener('click', deleteLetter);
-  document.getElementById('btn-enter').addEventListener('click', submitWord);
-  document.getElementById('btn-shuffle').addEventListener('click', shuffleLetters);
+  // Buttons - use touchstart for immediate mobile response
+  function addTouchHandler(btn, handler) {
+    let lastTouch = 0;
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      lastTouch = Date.now();
+      handler();
+    }, { passive: false });
+    btn.addEventListener('click', () => {
+      if (Date.now() - lastTouch < 500) return;
+      handler();
+    });
+  }
+  
+  addTouchHandler(document.getElementById('btn-delete'), deleteLetter);
+  addTouchHandler(document.getElementById('btn-enter'), submitWord);
+  addTouchHandler(document.getElementById('btn-shuffle'), shuffleLetters);
   
   // Found words toggle
   els.foundToggle.addEventListener('click', () => {
